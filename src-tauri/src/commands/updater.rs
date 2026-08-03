@@ -1,4 +1,7 @@
+use semver::Version;
 use serde::Serialize;
+#[cfg(target_os = "windows")]
+use std::io::Cursor;
 use std::path::PathBuf;
 use tauri::AppHandle;
 
@@ -9,20 +12,84 @@ pub struct UpdateInfo {
     pub changelog: String,
 }
 
+fn validate_update_url(download_url: &str) -> Result<(), String> {
+    let parsed =
+        url::Url::parse(download_url).map_err(|e| format!("Invalid update download URL: {e}"))?;
+    if parsed.scheme() != "https" {
+        return Err("Update download URL must use HTTPS.".into());
+    }
+    let host = parsed
+        .host_str()
+        .ok_or("Update download URL has no host.")?;
+    if host == "github.com" || host.ends_with(".githubusercontent.com") {
+        Ok(())
+    } else {
+        Err(format!("Update download URL host '{host}' is not allowed."))
+    }
+}
+
+fn sanitize_version(version: &str) -> Result<String, String> {
+    let cleaned: String = version
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
+        .collect();
+    if cleaned.is_empty() || cleaned != version {
+        return Err("Invalid update version.".into());
+    }
+    Ok(cleaned)
+}
+
+fn check_newer_version(current: &Version, new_version: &str) -> Result<(), String> {
+    let new = Version::parse(new_version)
+        .map_err(|e| format!("Invalid update version '{new_version}': {e}"))?;
+    if new <= *current {
+        return Err(format!(
+            "Update version '{new_version}' is not newer than the installed version '{current}'."
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn validate_windows_package(bytes: &[u8]) -> Result<(), String> {
+    let mut archive = zip::ZipArchive::new(Cursor::new(bytes))
+        .map_err(|e| format!("Downloaded update is not a valid zip: {e}"))?;
+    let has_exe = archive.file_names().any(|name| {
+        let lower = name.to_lowercase();
+        lower.ends_with(".exe") && lower.contains("moon")
+    });
+    if !has_exe {
+        return Err("Downloaded update does not contain the MoonTranslator executable.".into());
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn validate_linux_package(bytes: &[u8]) -> Result<(), String> {
+    if bytes.len() < 4 || &bytes[..4] != b"\x7fELF" {
+        return Err("Downloaded update is not a valid AppImage.".into());
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn download_and_install_update(
     app: AppHandle,
     version: String,
     download_url: String,
 ) -> Result<(), String> {
+    validate_update_url(&download_url)?;
+    let safe_version = sanitize_version(&version)?;
+    check_newer_version(&app.package_info().version, &safe_version)?;
+
     #[cfg(target_os = "windows")]
     {
-        install_update_windows(app, version, download_url).await
+        install_update_windows(app, safe_version, download_url).await
     }
 
     #[cfg(target_os = "linux")]
     {
-        install_update_linux(app, version, download_url).await
+        install_update_linux(app, safe_version, download_url).await
     }
 
     #[cfg(not(any(target_os = "windows", target_os = "linux")))]
@@ -48,6 +115,8 @@ async fn install_update_windows(
         .bytes()
         .await
         .map_err(|e| format!("Failed to read update data: {}", e))?;
+
+    validate_windows_package(&bytes)?;
 
     std::fs::write(&zip_path, bytes)
         .map_err(|e| format!("Failed to save update file: {}", e))?;
@@ -265,6 +334,8 @@ async fn install_update_linux(
         .bytes()
         .await
         .map_err(|e| format!("Failed to read update data: {}", e))?;
+
+    validate_linux_package(&bytes)?;
 
     let temp_file = std::env::temp_dir().join(format!("MoonTranslator-{}.AppImage", version));
     std::fs::write(&temp_file, bytes)

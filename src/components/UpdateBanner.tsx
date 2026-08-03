@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Download, FileText } from "lucide-react";
-import { APP_VERSION } from "@/lib/version";
+import { APP_VERSION, isNewerVersion } from "@/lib/version";
 import { getPlatform } from "@/lib/platform";
 
 interface UpdateBannerProps {
@@ -56,7 +56,7 @@ export default function UpdateBanner({ onViewChangelog }: UpdateBannerProps) {
         console.log("Current version:", APP_VERSION);
         console.log("Latest version:", latestVersion);
 
-        if (latestVersion && latestVersion !== APP_VERSION) {
+        if (latestVersion && isNewerVersion(latestVersion, APP_VERSION)) {
           // Find the platform-appropriate update asset
           const isLinux = getPlatform() === "linux";
           const portableAsset = release.assets?.find((asset: any) =>
