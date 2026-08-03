@@ -334,7 +334,7 @@ export default function SettingsPanel() {
               >
                 <div className="flex items-center gap-3 text-sm text-foreground">
                   <Monitor size={18} />
-                  Start with Windows
+                  Start on startup
                 </div>
                 <div className={`md-switch ${autostart ? "on" : ""}`}>
                   <div className="md-switch-thumb" />

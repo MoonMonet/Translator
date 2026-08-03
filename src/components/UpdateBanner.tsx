@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Download, FileText } from "lucide-react";
 import { APP_VERSION } from "@/lib/version";
+import { getPlatform } from "@/lib/platform";
 
 interface UpdateBannerProps {
   onViewChangelog?: () => void;
@@ -63,9 +64,10 @@ export default function UpdateBanner({ onViewChangelog }: UpdateBannerProps) {
         console.log("Latest version:", latestVersion);
 
         if (latestVersion && latestVersion !== APP_VERSION) {
-          // Find the portable zip asset
-          const portableAsset = release.assets?.find((asset: any) => 
-            asset.name.includes("portable.zip")
+          // Find the platform-appropriate update asset
+          const isLinux = getPlatform() === "linux";
+          const portableAsset = release.assets?.find((asset: any) =>
+            isLinux ? asset.name.endsWith(".AppImage") : asset.name.includes("portable.zip")
           );
 
           if (portableAsset) {

@@ -2473,7 +2473,11 @@ dependencies = [
  "tauri-plugin-store",
  "tauri-plugin-updater",
  "tokio",
+ "wayland-client",
+ "wayland-protocols",
+ "wayland-protocols-wlr",
  "windows 0.58.0",
+ "x11",
 ]
 
 [[package]]

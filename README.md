@@ -34,6 +34,18 @@ It uses a sleek Material Design 3 interface, lives quietly in your system tray, 
 - **Beautiful & Fluid:** Complete with a gorgeous dark/light theme, micro-animations, and smooth window transitions.
 - **Auto-Detect & Auto-Translate:** Just paste or type. It figures out the language and translates as you go.
 
+## 🐧 Linux Support
+
+MoonTranslator works on Linux (X11 and Wayland), packaged as an **AppImage** (and `.deb`). Everything works as on Windows: the tray icon, the double `Ctrl+C` popup, replace/paste, autostart, and in-app updates.
+
+A few platform notes:
+
+- **System packages (runtime):** `webkit2gtk-4.1`, `libayatana-appindicator` (or `libappindicator`), and `libx11`/`libxrandr`. On Debian/Ubuntu: `sudo apt install libwebkit2gtk-4.1-0 libayatana-appindicator3-1`.
+- **X11 (recommended):** full experience — the popup opens at your caret/cursor, stays on top, and the Replace feature types text back into any app.
+- **Wayland:** the popup still works and is positioned on your monitor, but Wayland's security model blocks some features: always-on-top may be ignored (the popup can fall behind other windows), the global shortcut only sees X11 apps, and the Replace feature needs `wtype` (or `ydotool`): `sudo apt install wtype`.
+- **AppImage update:** the updater replaces the running AppImage in place. If you run the app unpacked (not via AppImage), updates download the new AppImage next to the binary instead.
+- **Building from source:** you'll need the dev packages `libwebkit2gtk-4.1-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`, `patchelf`, `libx11-dev`, `libxrandr-dev`, and `libwayland-dev`.
+
 ## 🏗️ What's inside?
 
 <div align="center">

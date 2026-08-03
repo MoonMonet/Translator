@@ -70,6 +70,13 @@ pub fn run() {
             commands::updater::download_and_install_update,
         ])
         .setup(|app| {
+            #[cfg(target_os = "linux")]
+            if let Ok(display_backend) = std::env::var("XDG_SESSION_TYPE") {
+                if display_backend == "wayland" {
+                    log::info!("Running on a Wayland session: some features (global shortcut, caret positioning) are limited. The 'wtype' or 'ydotool' tool is needed for the Replace feature.");
+                }
+            }
+
             let open_item = MenuItemBuilder::with_id("open", "Open MoonTranslator").build(app)?;
             let settings_item = MenuItemBuilder::with_id("settings", "Settings").build(app)?;
             let update_item =
@@ -219,7 +226,7 @@ fn setup_global_shortcut(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
 async fn open_popup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let (target_x, target_y) = if let Some((caret_x, caret_y)) = commands::cursor::get_caret_pos()
     {
-        let bounds = commands::cursor::get_screen_bounds(caret_x, caret_y);
+        let bounds = commands::cursor::get_screen_bounds(app, caret_x, caret_y);
         let popup_w = (POPUP_WIDTH * bounds.scale_factor) as i32;
         let popup_h = (POPUP_HEIGHT * bounds.scale_factor) as i32;
 
@@ -239,8 +246,8 @@ async fn open_popup(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
         (x, y)
     } else {
-        let (mouse_x, mouse_y) = commands::cursor::get_cursor_pos();
-        let bounds = commands::cursor::get_screen_bounds(mouse_x, mouse_y);
+        let (mouse_x, mouse_y) = commands::cursor::get_cursor_pos(app);
+        let bounds = commands::cursor::get_screen_bounds(app, mouse_x, mouse_y);
         let popup_w = (POPUP_WIDTH * bounds.scale_factor) as i32;
         let popup_h = (POPUP_HEIGHT * bounds.scale_factor) as i32;
 

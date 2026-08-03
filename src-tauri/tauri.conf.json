@@ -71,6 +71,9 @@
     "linux": {
       "appimage": {
         "bundleMediaFramework": false
+      },
+      "deb": {
+        "depends": []
       }
     },
     "windows": {

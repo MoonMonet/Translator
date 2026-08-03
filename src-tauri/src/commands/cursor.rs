@@ -1,4 +1,5 @@
 use serde::Serialize;
+use tauri::AppHandle;
 
 #[derive(Debug, Serialize)]
 pub struct CursorPosition {
@@ -16,8 +17,8 @@ pub struct ScreenBounds {
 }
 
 #[tauri::command]
-pub fn get_cursor_position() -> Result<CursorPosition, String> {
-    let (x, y) = get_cursor_pos();
+pub fn get_cursor_position(app: AppHandle) -> Result<CursorPosition, String> {
+    let (x, y) = get_cursor_pos(&app);
     Ok(CursorPosition { x, y })
 }
 
@@ -54,7 +55,7 @@ pub fn get_caret_pos() -> Option<(i32, i32)> {
 }
 
 #[cfg(target_os = "windows")]
-pub fn get_cursor_pos() -> (i32, i32) {
+pub fn get_cursor_pos(_app: &AppHandle) -> (i32, i32) {
     use windows::Win32::Foundation::POINT;
     use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
 
@@ -66,17 +67,17 @@ pub fn get_cursor_pos() -> (i32, i32) {
 }
 
 #[cfg(target_os = "linux")]
-pub fn get_cursor_pos() -> (i32, i32) {
+pub fn get_cursor_pos(app: &AppHandle) -> (i32, i32) {
     if let Ok(display_backend) = std::env::var("XDG_SESSION_TYPE") {
         if display_backend == "wayland" {
-            return get_cursor_pos_wayland();
+            return get_cursor_pos_wayland(app);
         }
     }
     get_cursor_pos_x11()
 }
 
 #[cfg(all(not(target_os = "windows"), not(target_os = "linux")))]
-pub fn get_cursor_pos() -> (i32, i32) {
+pub fn get_cursor_pos(_app: &AppHandle) -> (i32, i32) {
     (500, 500)
 }
 
@@ -118,14 +119,22 @@ fn get_cursor_pos_x11() -> (i32, i32) {
 }
 
 #[cfg(target_os = "linux")]
-fn get_cursor_pos_wayland() -> (i32, i32) {
-    // Wayland doesn't allow querying global cursor position for security reasons
-    // Return a default position - the popup will still work but won't be perfectly positioned
+fn get_cursor_pos_wayland(app: &AppHandle) -> (i32, i32) {
+    // Wayland doesn't allow querying the global cursor position for security reasons.
+    // Center on the primary monitor so the popup appears in a sensible spot.
+    if let Ok(Some(monitor)) = app.primary_monitor() {
+        let size = monitor.size();
+        let position = monitor.position();
+        return (
+            position.x + size.width as i32 / 2,
+            position.y + size.height as i32 / 2,
+        );
+    }
     (500, 500)
 }
 
 #[cfg(target_os = "windows")]
-pub fn get_screen_bounds(x: i32, y: i32) -> ScreenBounds {
+pub fn get_screen_bounds(_app: &AppHandle, x: i32, y: i32) -> ScreenBounds {
     use windows::Win32::Foundation::{POINT, RECT};
     use windows::Win32::Graphics::Gdi::{
         GetMonitorInfoW, MonitorFromPoint, MONITORINFO, MONITOR_DEFAULTTONEAREST,
@@ -165,17 +174,17 @@ pub fn get_screen_bounds(x: i32, y: i32) -> ScreenBounds {
 }
 
 #[cfg(target_os = "linux")]
-pub fn get_screen_bounds(x: i32, y: i32) -> ScreenBounds {
+pub fn get_screen_bounds(app: &AppHandle, x: i32, y: i32) -> ScreenBounds {
     if let Ok(display_backend) = std::env::var("XDG_SESSION_TYPE") {
         if display_backend == "wayland" {
-            return get_screen_bounds_wayland();
+            return get_screen_bounds_wayland(app);
         }
     }
     get_screen_bounds_x11(x, y)
 }
 
 #[cfg(all(not(target_os = "windows"), not(target_os = "linux")))]
-pub fn get_screen_bounds(_x: i32, _y: i32) -> ScreenBounds {
+pub fn get_screen_bounds(_app: &AppHandle, _x: i32, _y: i32) -> ScreenBounds {
     ScreenBounds {
         left: 0,
         top: 0,
@@ -269,7 +278,37 @@ fn get_screen_bounds_x11(x: i32, y: i32) -> ScreenBounds {
 }
 
 #[cfg(target_os = "linux")]
-fn get_screen_bounds_wayland() -> ScreenBounds {
+fn get_screen_bounds_wayland(app: &AppHandle) -> ScreenBounds {
+    use tauri::Manager;
+
+    if let Ok(Some(monitor)) = app.primary_monitor() {
+        let size = monitor.size();
+        let position = monitor.position();
+        let scale_factor = monitor.scale_factor().max(1.0);
+        return ScreenBounds {
+            left: position.x,
+            top: position.y,
+            right: position.x + size.width as i32,
+            bottom: position.y + size.height as i32,
+            scale_factor,
+        };
+    }
+
+    if let Some(window) = app.get_webview_window("main") {
+        if let Ok(Some(monitor)) = window.current_monitor() {
+            let size = monitor.size();
+            let position = monitor.position();
+            let scale_factor = monitor.scale_factor().max(1.0);
+            return ScreenBounds {
+                left: position.x,
+                top: position.y,
+                right: position.x + size.width as i32,
+                bottom: position.y + size.height as i32,
+                scale_factor,
+            };
+        }
+    }
+
     ScreenBounds {
         left: 0,
         top: 0,

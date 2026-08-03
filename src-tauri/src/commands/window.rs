@@ -12,10 +12,10 @@ const PASTE_INIT_DELAY_MS: u64 = 300;
 const PASTE_MODIFIER_DELAY_MS: u64 = 20;
 const PASTE_KEY_HOLD_MS: u64 = 30;
 
-fn calculate_popup_position(_app: &AppHandle, has_text: bool) -> (i32, i32) {
+fn calculate_popup_position(app: &AppHandle, has_text: bool) -> (i32, i32) {
     if has_text {
         if let Some((caret_x, caret_y)) = get_caret_pos() {
-            let bounds = get_screen_bounds(caret_x, caret_y);
+            let bounds = get_screen_bounds(app, caret_x, caret_y);
             let popup_w = (POPUP_WIDTH * bounds.scale_factor) as i32;
             let popup_h = (POPUP_HEIGHT * bounds.scale_factor) as i32;
 
@@ -37,8 +37,8 @@ fn calculate_popup_position(_app: &AppHandle, has_text: bool) -> (i32, i32) {
         }
     }
 
-    let (mouse_x, mouse_y) = get_cursor_pos();
-    let bounds = get_screen_bounds(mouse_x, mouse_y);
+    let (mouse_x, mouse_y) = get_cursor_pos(app);
+    let bounds = get_screen_bounds(app, mouse_x, mouse_y);
     let popup_w = (POPUP_WIDTH * bounds.scale_factor) as i32;
     let popup_h = (POPUP_HEIGHT * bounds.scale_factor) as i32;
 
@@ -157,6 +157,13 @@ pub async fn set_popup_pinned(app: AppHandle, pinned: bool) -> Result<(), String
 
 #[tauri::command]
 pub async fn simulate_paste() -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        if std::env::var("WAYLAND_DISPLAY").is_ok() {
+            return simulate_paste_wayland();
+        }
+    }
+
     use rdev::{simulate, EventType, Key};
     use std::thread;
     use std::time::Duration;
@@ -180,4 +187,28 @@ pub async fn simulate_paste() -> Result<(), String> {
         .map_err(|e| format!("Failed to release modifier: {:?}", e))?;
 
     Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn simulate_paste_wayland() -> Result<(), String> {
+    use std::process::Command;
+
+    std::thread::sleep(std::time::Duration::from_millis(PASTE_INIT_DELAY_MS));
+
+    if let Ok(status) = Command::new("wtype").args(["-M", "ctrl", "-k", "v", "-m", "ctrl"]).status() {
+        if status.success() {
+            return Ok(());
+        }
+    }
+
+    if let Ok(status) = Command::new("ydotool").args(["key", "29:1", "47:1", "47:0", "29:0"]).status() {
+        if status.success() {
+            return Ok(());
+        }
+    }
+
+    Err(
+        "Paste requires an X11 session, or the 'wtype' or 'ydotool' tool installed \
+         on Wayland. Install one with: sudo apt install wtype".into(),
+    )
 }

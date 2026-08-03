@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::path::PathBuf;
 use tauri::AppHandle;
 
@@ -11,6 +11,28 @@ pub struct UpdateInfo {
 
 #[tauri::command]
 pub async fn download_and_install_update(
+    app: AppHandle,
+    version: String,
+    download_url: String,
+) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        install_update_windows(app, version, download_url).await
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        install_update_linux(app, version, download_url).await
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        Err("Automatic updates are not supported on this platform yet.".into())
+    }
+}
+
+#[cfg(target_os = "windows")]
+async fn install_update_windows(
     app: AppHandle,
     version: String,
     download_url: String,
@@ -213,6 +235,104 @@ try {{
         .arg("Bypass")
         .arg("-File")
         .arg(&script_path)
+        .spawn()
+        .map_err(|e| format!("Failed to start update process: {}", e))?;
+
+    app.exit(0);
+
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+async fn install_update_linux(
+    app: AppHandle,
+    version: String,
+    download_url: String,
+) -> Result<(), String> {
+    let response = reqwest::get(&download_url)
+        .await
+        .map_err(|e| format!("Failed to download update: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "Failed to download update ({}): {}",
+            response.status(),
+            response.text().await.unwrap_or_default()
+        ));
+    }
+
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|e| format!("Failed to read update data: {}", e))?;
+
+    let temp_file = std::env::temp_dir().join(format!("MoonTranslator-{}.AppImage", version));
+    std::fs::write(&temp_file, bytes)
+        .map_err(|e| format!("Failed to save update file: {}", e))?;
+
+    let target_path = match std::env::var("APPIMAGE").ok() {
+        Some(path) => PathBuf::from(path),
+        None => {
+            let dir = std::env::current_exe()
+                .ok()
+                .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+                .or_else(|| {
+                    std::env::var("HOME")
+                        .ok()
+                        .map(|h| PathBuf::from(h).join(".local").join("bin"))
+                })
+                .unwrap_or_else(std::env::temp_dir);
+
+            if !dir.exists() {
+                let _ = std::fs::create_dir_all(&dir);
+            }
+            dir.join("MoonTranslator.AppImage")
+        }
+    };
+
+    let script_path = std::env::temp_dir().join("update_moontranslator.sh");
+    let script_content = format!(
+        r#"#!/bin/sh
+set -e
+
+NEW_FILE="$1"
+TARGET_FILE="$2"
+PID="$3"
+
+elapsed=0
+while kill -0 "$PID" 2>/dev/null; do
+    sleep 1
+    elapsed=$((elapsed + 1))
+    if [ "$elapsed" -ge 60 ]; then
+        kill -9 "$PID" 2>/dev/null || true
+        break
+    fi
+done
+
+sleep 1
+
+if [ ! -f "$NEW_FILE" ]; then
+    exit 1
+fi
+
+mv -f "$NEW_FILE" "$TARGET_FILE"
+chmod +x "$TARGET_FILE"
+
+nohup "$TARGET_FILE" >/dev/null 2>&1 &
+"#,
+    );
+
+    std::fs::write(&script_path, script_content)
+        .map_err(|e| format!("Failed to create update script: {}", e))?;
+
+    std::process::Command::new("sh")
+        .arg(&script_path)
+        .arg(&temp_file)
+        .arg(&target_path)
+        .arg(std::process::id().to_string())
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
         .spawn()
         .map_err(|e| format!("Failed to start update process: {}", e))?;
 
