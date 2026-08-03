@@ -76,7 +76,8 @@ jobs:
             patchelf \
             libx11-dev \
             libxrandr-dev \
-            libwayland-dev
+            libwayland-dev \
+            rpm
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -99,7 +100,7 @@ jobs:
         run: pnpm install
 
       - name: Build Tauri App
-        run: pnpm tauri build
+        run: pnpm tauri build --bundles deb rpm appimage
 
       - name: Rename AppImage
         run: |
@@ -119,9 +120,36 @@ jobs:
             exit 1
           fi
 
+      - name: Rename Debian Package
+        run: |
+          cd src-tauri/target/release/bundle/deb
+          DEB_FILE=$(ls *.deb 2>/dev/null | head -n 1)
+          if [ -n "$DEB_FILE" ]; then
+            mv "$DEB_FILE" "MoonTranslator-dev.${{ github.run_number }}.deb"
+            echo "Debian package renamed successfully"
+          else
+            echo "Error: No deb file found"
+            exit 1
+          fi
+
+      - name: Rename RPM Package
+        run: |
+          cd src-tauri/target/release/bundle/rpm
+          RPM_FILE=$(ls *.rpm 2>/dev/null | head -n 1)
+          if [ -n "$RPM_FILE" ]; then
+            mv "$RPM_FILE" "MoonTranslator-dev.${{ github.run_number }}.rpm"
+            echo "RPM package renamed successfully"
+          else
+            echo "Error: No rpm file found"
+            exit 1
+          fi
+
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MoonTranslator-Linux-Dev-${{ github.run_number }}
-          path: src-tauri/target/release/bundle/appimage/MoonTranslator-dev.${{ github.run_number }}.AppImage
+          path: |
+            src-tauri/target/release/bundle/appimage/MoonTranslator-dev.${{ github.run_number }}.AppImage
+            src-tauri/target/release/bundle/deb/MoonTranslator-dev.${{ github.run_number }}.deb
+            src-tauri/target/release/bundle/rpm/MoonTranslator-dev.${{ github.run_number }}.rpm
           retention-days: 30

@@ -34,7 +34,8 @@ jobs:
             patchelf \
             libx11-dev \
             libxrandr-dev \
-            libwayland-dev
+            libwayland-dev \
+            rpm
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -57,7 +58,7 @@ jobs:
         run: pnpm install
 
       - name: Build Tauri App
-        run: pnpm tauri build
+        run: pnpm tauri build --bundles deb rpm appimage
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
@@ -74,11 +75,36 @@ jobs:
             exit 1
           fi
 
+      - name: Rename Debian Package
+        run: |
+          cd src-tauri/target/release/bundle/deb
+          DEB_FILE=$(ls *.deb 2>/dev/null | head -n 1)
+          if [ -n "$DEB_FILE" ]; then
+            mv "$DEB_FILE" "MoonTranslator-App-${{ github.event.inputs.version }}.deb"
+          else
+            echo "Error: No deb file found"
+            exit 1
+          fi
+
+      - name: Rename RPM Package
+        run: |
+          cd src-tauri/target/release/bundle/rpm
+          RPM_FILE=$(ls *.rpm 2>/dev/null | head -n 1)
+          if [ -n "$RPM_FILE" ]; then
+            mv "$RPM_FILE" "MoonTranslator-App-${{ github.event.inputs.version }}.rpm"
+          else
+            echo "Error: No rpm file found"
+            exit 1
+          fi
+
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MoonTranslator-Linux
-          path: src-tauri/target/release/bundle/appimage/MoonTranslator-App-${{ github.event.inputs.version }}.AppImage
+          path: |
+            src-tauri/target/release/bundle/appimage/MoonTranslator-App-${{ github.event.inputs.version }}.AppImage
+            src-tauri/target/release/bundle/deb/MoonTranslator-App-${{ github.event.inputs.version }}.deb
+            src-tauri/target/release/bundle/rpm/MoonTranslator-App-${{ github.event.inputs.version }}.rpm
           retention-days: 14
 
   build-and-release:
@@ -168,6 +194,8 @@ jobs:
             MoonTranslator-App-${{ github.event.inputs.version }}-portable.zip
             MoonTranslator-Installer.exe
             linux-artifacts/*.AppImage
+            linux-artifacts/*.deb
+            linux-artifacts/*.rpm
           draft: false
           prerelease: false
         env:
