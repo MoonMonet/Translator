@@ -27,8 +27,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src 'self' https://api.deepl.com/ https://api-free.deepl.com/ https://translate.googleapis.com/ https://edge.microsoft.com/ https://api-edge.cognitive.microsofttranslator.com/ https://api.laratranslate.com/ https://api.github.com/; img-src 'self' data: asset: https://cdn3.emoji.gg; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; base-uri 'self'; form-action 'self'; object-src 'none'",
-      "devCsp": "default-src 'self'; connect-src 'self' ws://localhost:* http://localhost:* https://api.deepl.com/ https://api-free.deepl.com/ https://translate.googleapis.com/ https://edge.microsoft.com/ https://api-edge.cognitive.microsofttranslator.com/ https://api.laratranslate.com/ https://api.github.com/; img-src 'self' data: asset: https://cdn3.emoji.gg; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; base-uri 'self'; form-action 'self'; object-src 'none'",
+      "csp": "default-src 'self'; connect-src 'self' https://api.deepl.com/ https://api-free.deepl.com/ https://translate.googleapis.com/ https://edge.microsoft.com/ https://api-edge.cognitive.microsofttranslator.com/ https://api.laratranslate.com/ https://api.github.com/; img-src 'self' data: asset:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; base-uri 'self'; form-action 'self'; object-src 'none'",
+      "devCsp": "default-src 'self'; connect-src 'self' ws://localhost:* http://localhost:* https://api.deepl.com/ https://api-free.deepl.com/ https://translate.googleapis.com/ https://edge.microsoft.com/ https://api-edge.cognitive.microsofttranslator.com/ https://api.laratranslate.com/ https://api.github.com/; img-src 'self' data: asset:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; base-uri 'self'; form-action 'self'; object-src 'none'",
       "capabilities": [
         {
           "identifier": "main-capability",

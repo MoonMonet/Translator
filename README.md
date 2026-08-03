@@ -97,7 +97,7 @@ DeepL provides incredibly accurate, natural-sounding translations. Their free ti
 
 ### Custom URLs
 
-You can also run your own basic local or hosted translation server. Simply enter the full URL (e.g., `http://localhost:5000/translate`) into the Custom API field!
+You can also run your own basic local or hosted translation server. Simply enter the full URL (e.g., `http://localhost:5000/translate`) into the Custom API field! Note: your text is POSTed to whatever URL you provide, so only point it at endpoints you trust.
 
 ## 📝 License
 

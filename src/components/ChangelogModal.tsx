@@ -218,7 +218,7 @@ export default function ChangelogModal({ isOpen: externalIsOpen, onClose: extern
               What&apos;s New in v{version}
             </h2>
             <Image 
-              src="https://cdn3.emoji.gg/emojis/2539-keqingheart.png" 
+              src="/keqingheart.png" 
               alt="Heart" 
               width={32} 
               height={32}
