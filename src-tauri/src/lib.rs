@@ -58,7 +58,6 @@ pub fn run() {
             commands::translate::translate_text,
             commands::translate::validate_api_key,
             commands::cursor::get_cursor_position,
-            commands::proxy::proxy_request,
             commands::window::open_popup_window,
             commands::window::close_popup_window,
             commands::window::hide_main_window,

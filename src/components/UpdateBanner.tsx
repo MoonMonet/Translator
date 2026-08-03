@@ -38,26 +38,19 @@ export default function UpdateBanner({ onViewChangelog }: UpdateBannerProps) {
 
   const checkForUpdates = async (showBanner = false) => {
     try {
-      const { invoke } = await import("@tauri-apps/api/core");
-      const result = await invoke<{ status: number; body: string }>(
-        "proxy_request",
+      const { fetch } = await import("@tauri-apps/plugin-http");
+      const response = await fetch(
+        "https://api.github.com/repos/noxygalaxy/MoonTranslator/releases/latest",
         {
-          args: {
-            url: "https://api.github.com/repos/noxygalaxy/MoonTranslator/releases/latest",
-            method: "GET",
-            headers: { 
-              Accept: "application/vnd.github.v3+json",
-              "User-Agent": "MoonTranslator"
-            },
-            body: null,
+          headers: {
+            Accept: "application/vnd.github.v3+json",
+            "User-Agent": "MoonTranslator",
           },
         }
       );
 
-      console.log("Update check response:", result);
-
-      if (result.status === 200) {
-        const release = JSON.parse(result.body);
+      if (response.ok) {
+        const release = await response.json();
         const latestVersion = release.tag_name?.replace("v", "") || "";
 
         console.log("Current version:", APP_VERSION);
