@@ -63,35 +63,30 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
-      - name: Rename AppImage
+      - name: Stage Linux Artifacts
         run: |
+          mkdir -p linux-artifacts
           cd src-tauri/target/release/bundle/appimage
           APPIMAGE_FILE=$(ls *.AppImage 2>/dev/null | head -n 1)
           if [ -n "$APPIMAGE_FILE" ]; then
-            mv "$APPIMAGE_FILE" "MoonTranslator-App-${{ github.event.inputs.version }}.AppImage"
-            chmod +x "MoonTranslator-App-${{ github.event.inputs.version }}.AppImage"
+            mv "$APPIMAGE_FILE" "$GITHUB_WORKSPACE/linux-artifacts/MoonTranslator-App-${{ github.event.inputs.version }}.AppImage"
+            chmod +x "$GITHUB_WORKSPACE/linux-artifacts/MoonTranslator-App-${{ github.event.inputs.version }}.AppImage"
           else
             echo "Error: No AppImage file found"
             exit 1
           fi
-
-      - name: Rename Debian Package
-        run: |
-          cd src-tauri/target/release/bundle/deb
+          cd "$GITHUB_WORKSPACE/src-tauri/target/release/bundle/deb"
           DEB_FILE=$(ls *.deb 2>/dev/null | head -n 1)
           if [ -n "$DEB_FILE" ]; then
-            mv "$DEB_FILE" "MoonTranslator-App-${{ github.event.inputs.version }}.deb"
+            mv "$DEB_FILE" "$GITHUB_WORKSPACE/linux-artifacts/MoonTranslator-App-${{ github.event.inputs.version }}.deb"
           else
             echo "Error: No deb file found"
             exit 1
           fi
-
-      - name: Rename RPM Package
-        run: |
-          cd src-tauri/target/release/bundle/rpm
+          cd "$GITHUB_WORKSPACE/src-tauri/target/release/bundle/rpm"
           RPM_FILE=$(ls *.rpm 2>/dev/null | head -n 1)
           if [ -n "$RPM_FILE" ]; then
-            mv "$RPM_FILE" "MoonTranslator-App-${{ github.event.inputs.version }}.rpm"
+            mv "$RPM_FILE" "$GITHUB_WORKSPACE/linux-artifacts/MoonTranslator-App-${{ github.event.inputs.version }}.rpm"
           else
             echo "Error: No rpm file found"
             exit 1
@@ -101,10 +96,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MoonTranslator-Linux
-          path: |
-            src-tauri/target/release/bundle/appimage/MoonTranslator-App-${{ github.event.inputs.version }}.AppImage
-            src-tauri/target/release/bundle/deb/MoonTranslator-App-${{ github.event.inputs.version }}.deb
-            src-tauri/target/release/bundle/rpm/MoonTranslator-App-${{ github.event.inputs.version }}.rpm
+          path: linux-artifacts
           retention-days: 14
 
   build-and-release:
