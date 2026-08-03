@@ -1,3 +1,5 @@
+> **⚠️ Antivirus notice:** This app uses a global keyboard shortcut and may be flagged by some antivirus software - it's a false positive.
+
 <div align="center">
    <img src="public/logo.webp" alt="MoonTranslator Logo" width="80" height="80" />
    <h1>MoonTranslator</h1>
