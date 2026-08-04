@@ -157,7 +157,9 @@ jobs:
 
   build-and-release:
     runs-on: windows-latest
-    needs: build-linux
+    needs:
+      - build-linux
+      - build-flatpak
     permissions:
       contents: write
 
@@ -225,6 +227,12 @@ jobs:
           name: MoonTranslator-Linux
           path: linux-artifacts
 
+      - name: Download Flatpak Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: MoonTranslator-Flatpak
+          path: flatpak-artifacts
+
       - name: Read Release Notes
         shell: pwsh
         run: |
@@ -244,6 +252,7 @@ jobs:
             linux-artifacts/*.AppImage
             linux-artifacts/*.deb
             linux-artifacts/*.rpm
+            flatpak-artifacts/*.flatpak
           draft: false
           prerelease: false
         env:
