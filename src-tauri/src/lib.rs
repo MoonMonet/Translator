@@ -144,6 +144,14 @@ fn show_and_focus_window(app: &AppHandle, label: &str) {
     }
 }
 
+fn focus_main_input(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window
+            .emit("focus-input", ())
+            .inspect_err(|e| log::warn!("Failed to emit focus-input: {e}"));
+    }
+}
+
 fn toggle_main_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let visible = window.is_visible().unwrap_or(false);
@@ -158,6 +166,7 @@ fn toggle_main_window(app: &AppHandle) {
             let _ = window.set_skip_taskbar(true);
         } else {
             show_and_focus_window(app, "main");
+            focus_main_input(app);
         }
     }
 }
@@ -322,6 +331,7 @@ pub fn run() {
                 .on_menu_event(|app, event| match event.id().as_ref() {
                     "open" => {
                         show_and_focus_window(app, "main");
+                        focus_main_input(app);
                     }
                     "settings" => {
                         show_and_focus_window(app, "main");
@@ -352,6 +362,7 @@ pub fn run() {
                     } = event
                     {
                         show_and_focus_window(tray.app_handle(), "main");
+                        focus_main_input(tray.app_handle());
                     }
                 })
                 .build(app)?;
