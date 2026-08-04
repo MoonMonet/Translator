@@ -48,6 +48,21 @@ A few platform notes:
 - **AppImage update:** the updater replaces the running AppImage in place. If you run the app unpacked (not via AppImage), updates download the new AppImage next to the binary instead.
 - **Building from source:** you'll need the dev packages `libwebkit2gtk-4.1-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`, `patchelf`, `libx11-dev`, `libxrandr-dev`, and `libwayland-dev`.
 
+### Flatpak
+
+A Flatpak build (from source, against `org.gnome.Sdk`) is included for distros where the AppImage's bundled libraries conflict with the host — this avoids the AppImage/glibc crash on rolling distros like Arch.
+
+```bash
+scripts/build-flatpak.sh
+flatpak run dev.noxygalaxy.moontranslator
+```
+
+Notes:
+
+- First build downloads the GNOME runtime + Rust/Node SDK extensions (a few GB) and compiles `libayatana-appindicator` from source (the GNOME SDK doesn't ship it).
+- The double `Ctrl+C` global shortcut listens on `/dev/input`; the manifest grants `--device=input`, but some sandboxed environments may still limit it — the tray icon and popup work regardless.
+- Tauri's built-in updater can't replace a Flatpak; update via `flatpak update` instead.
+
 ## 🏗️ What's inside?
 
 <div align="center">

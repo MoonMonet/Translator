@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=MoonTranslator
+Comment=Minimalist Translation App
+Comment[ru]=Минималистичное приложение для перевода
+Exec=moon-translator
+Icon=dev.noxygalaxy.moontranslator
+Terminal=false
+Type=Application
+Categories=Utility;Translation;GTK;
+StartupNotify=true

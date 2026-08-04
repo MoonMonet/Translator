@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.noxygalaxy.moontranslator</id>
+  <name>MoonTranslator</name>
+  <summary>Minimalist Translation App</summary>
+  <metadata_license>GPL-3.0-only</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <description>
+    <p>A beautiful, minimalist, and smart desktop translator that lives quietly in your system tray. Highlight text anywhere, double-tap Ctrl+C, and a mini translator pops right up.</p>
+  </description>
+  <launchable type="desktop-id">dev.noxygalaxy.moontranslator.desktop</launchable>
+  <releases>
+    <release version="0.1.5" date="2026-08-04"/>
+  </releases>
+</component>

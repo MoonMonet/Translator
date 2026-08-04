@@ -140,3 +140,61 @@ jobs:
           name: MoonTranslator-Linux-Dev-${{ github.run_number }}
           path: linux-artifacts
           retention-days: 30
+
+  build-flatpak:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install flatpak tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder ccache
+
+      - name: Cache Flatpak build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/flatpak
+            ~/.cache/flatpak-builder
+            ~/.cache/ccache
+          key: flatpak-${{ runner.os }}-48-${{ hashFiles('dev.noxygalaxy.moontranslator.yml', 'flatpak/**') }}
+          restore-keys: |
+            flatpak-${{ runner.os }}-48-
+
+      - name: Add flathub remote
+        run: flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+      - name: Install runtime and SDK extensions
+        run: |
+          flatpak install --user --noninteractive flathub \
+            org.gnome.Platform//48 \
+            org.gnome.Sdk//48 \
+            org.freedesktop.Sdk.Extension.rust-stable//48 \
+            org.freedesktop.Sdk.Extension.node24//48
+
+      - name: Build Flatpak
+        run: |
+          flatpak-builder --user --ccache --force-clean \
+            --repo=flatpak-repo \
+            build-flatpak \
+            dev.noxygalaxy.moontranslator.yml
+
+      - name: Bundle Flatpak
+        run: |
+          flatpak build-bundle \
+            --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo \
+            flatpak-repo \
+            MoonTranslator-App-dev.${{ github.run_number }}.flatpak \
+            dev.noxygalaxy.moontranslator
+
+      - name: Upload Flatpak Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MoonTranslator-Flatpak-Dev-${{ github.run_number }}
+          path: MoonTranslator-App-dev.${{ github.run_number }}.flatpak
+          retention-days: 30

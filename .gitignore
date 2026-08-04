@@ -21,6 +21,9 @@
 /build
 /installer/target
 
+# flatpak
+/build-flatpak
+
 # misc
 .DS_Store
 *.pem

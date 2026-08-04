@@ -1,0 +1,128 @@
+app-id: dev.noxygalaxy.moontranslator
+runtime: org.gnome.Platform
+runtime-version: "48"
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node24
+command: moon-translator
+
+finish-args:
+  - --share=network
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=dri
+  - --device=input
+  - --socket=session-bus
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --talk-name=org.freedesktop.StatusNotifierItem
+  - --filesystem=xdg-config/autostart:create
+
+modules:
+  # Tray icon support: the GNOME SDK ships everything Tauri needs except libayatana-appindicator.
+  # Recipe mirrors flathub/shared-modules/libayatana-appindicator.
+  - name: libayatana-appindicator
+    buildsystem: cmake-ninja
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+    config-opts:
+      - -DENABLE_BINDINGS_MONO=NO
+      - -DENABLE_BINDINGS_VALA=NO
+      - -DENABLE_GTKDOC=NO
+    sources:
+      - type: git
+        url: https://github.com/AyatanaIndicators/libayatana-appindicator.git
+        tag: 0.5.94
+        commit: 31e8bb083b307e1cc96af4874a94707727bd1e79
+    modules:
+      - name: intltool
+        buildsystem: autotools
+        cleanup:
+          - '*'
+        sources:
+          - type: archive
+            url: https://launchpad.net/intltool/trunk/0.51.0/+download/intltool-0.51.0.tar.gz
+            mirror-urls:
+              - https://gstreamer.freedesktop.org/src/mirror/intltool-0.51.0.tar.gz
+              - https://mirror-hk.koddos.net/lfs/lfs-packages/12.0/intltool-0.51.0.tar.gz
+            sha256: 67c74d94196b153b774ab9f89b2fa6c6ba79352407037c8c14d5aeb334e959cd
+          - type: patch
+            path: flatpak/intltool-perl5.26-regex-fixes.patch
+      - name: libdbusmenu
+        buildsystem: autotools
+        build-options:
+          cflags: -Wno-error
+        cleanup:
+          - '*.la'
+          - /include
+          - /lib/pkgconfig
+          - /libexec
+          - /share/doc
+          - /share/gtk-doc
+        config-opts:
+          - --with-gtk=3
+          - --disable-dumper
+          - --disable-static
+          - --disable-tests
+          - --disable-gtk-doc
+          - --enable-introspection=no
+          - --disable-vala
+        sources:
+          - type: archive
+            url: https://launchpad.net/libdbusmenu/16.04/16.04.0/+download/libdbusmenu-16.04.0.tar.gz
+            mirror-urls:
+              - https://sources.suse.com/SUSE:SLFO:Main:Build/libdbusmenu/a5b3e4717f09f90f9cd5568a5f933e8d/libdbusmenu-16.04.0.tar.gz
+              - https://mirror.math.princeton.edu/pub/frugalware/frugalware-2.1/source/xlib/libdbusmenu/libdbusmenu-16.04.0.tar.gz
+              - https://ftp.fr.openbsd.org/pub/OpenBSD/distfiles/libdbusmenu-16.04.0.tar.gz
+            sha256: b9cc4a2acd74509435892823607d966d424bd9ad5d0b00938f27240a1bfa878a
+          - type: patch
+            path: flatpak/0001-Fix-HAVE_VALGRIND-AM_CONDITIONAL.patch
+      - name: ayatana-ido
+        buildsystem: cmake-ninja
+        cleanup:
+          - /include
+          - /lib/pkgconfig
+        config-opts:
+          - -DENABLE_INTROSPECTION=OFF
+        sources:
+          - type: git
+            url: https://github.com/AyatanaIndicators/ayatana-ido.git
+            tag: 0.10.4
+            commit: f968079b09e2310fefc3fc307359025f1c74b3eb
+          - type: patch
+            path: flatpak/0001-Make-introspection-configurable.patch
+      - name: libayatana-indicator
+        buildsystem: cmake-ninja
+        cleanup:
+          - /include
+          - /lib/pkgconfig
+          - /libexec
+          - /share
+        sources:
+          - type: git
+            url: https://github.com/AyatanaIndicators/libayatana-indicator.git
+            tag: 0.9.4
+            commit: 611bb384b73fa6311777ba4c41381a06f5b99dad
+
+  - name: moontranslator
+    buildsystem: simple
+    build-options:
+      env:
+        PATH: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node24/bin:/usr/bin:/bin
+        LD_LIBRARY_PATH: /usr/lib/sdk/rust-stable/lib
+    build-commands:
+      - npm install -g pnpm@11.18.0
+      - pnpm install --frozen-lockfile
+      - pnpm build
+      - cargo build --release --manifest-path src-tauri/Cargo.toml --locked
+      - install -Dm755 src-tauri/target/release/moon-translator /app/bin/moon-translator
+      - install -Dm644 flatpak/dev.noxygalaxy.moontranslator.desktop /app/share/applications/dev.noxygalaxy.moontranslator.desktop
+      - install -Dm644 src-tauri/icons/128x128.png /app/share/icons/hicolor/128x128/apps/dev.noxygalaxy.moontranslator.png
+      - install -Dm644 src-tauri/icons/128x128@2x.png /app/share/icons/hicolor/256x256/apps/dev.noxygalaxy.moontranslator.png
+      - install -Dm644 flatpak/dev.noxygalaxy.moontranslator.metainfo.xml /app/share/metainfo/dev.noxygalaxy.moontranslator.metainfo.xml
+    sources:
+      - type: dir
+        path: .
