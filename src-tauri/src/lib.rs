@@ -16,7 +16,112 @@ struct CtrlCState {
 
 struct OpenHotkey(Mutex<Option<String>>);
 
+struct PopupCombo {
+    ctrl: bool,
+    shift: bool,
+    alt: bool,
+    meta: bool,
+    key: rdev::Key,
+}
+
+struct PopupHotkey(Mutex<Option<PopupCombo>>);
+
+fn default_popup_combo() -> PopupCombo {
+    parse_popup_combo(DEFAULT_POPUP_HOTKEY).expect("valid default popup hotkey")
+}
+
+fn key_from_str(s: &str) -> Option<rdev::Key> {
+    use rdev::Key;
+    match s.to_uppercase().as_str() {
+        "A" => Some(Key::KeyA),
+        "B" => Some(Key::KeyB),
+        "C" => Some(Key::KeyC),
+        "D" => Some(Key::KeyD),
+        "E" => Some(Key::KeyE),
+        "F" => Some(Key::KeyF),
+        "G" => Some(Key::KeyG),
+        "H" => Some(Key::KeyH),
+        "I" => Some(Key::KeyI),
+        "J" => Some(Key::KeyJ),
+        "K" => Some(Key::KeyK),
+        "L" => Some(Key::KeyL),
+        "M" => Some(Key::KeyM),
+        "N" => Some(Key::KeyN),
+        "O" => Some(Key::KeyO),
+        "P" => Some(Key::KeyP),
+        "Q" => Some(Key::KeyQ),
+        "R" => Some(Key::KeyR),
+        "S" => Some(Key::KeyS),
+        "T" => Some(Key::KeyT),
+        "U" => Some(Key::KeyU),
+        "V" => Some(Key::KeyV),
+        "W" => Some(Key::KeyW),
+        "X" => Some(Key::KeyX),
+        "Y" => Some(Key::KeyY),
+        "Z" => Some(Key::KeyZ),
+        "0" => Some(Key::Num0),
+        "1" => Some(Key::Num1),
+        "2" => Some(Key::Num2),
+        "3" => Some(Key::Num3),
+        "4" => Some(Key::Num4),
+        "5" => Some(Key::Num5),
+        "6" => Some(Key::Num6),
+        "7" => Some(Key::Num7),
+        "8" => Some(Key::Num8),
+        "9" => Some(Key::Num9),
+        "F1" => Some(Key::F1),
+        "F2" => Some(Key::F2),
+        "F3" => Some(Key::F3),
+        "F4" => Some(Key::F4),
+        "F5" => Some(Key::F5),
+        "F6" => Some(Key::F6),
+        "F7" => Some(Key::F7),
+        "F8" => Some(Key::F8),
+        "F9" => Some(Key::F9),
+        "F10" => Some(Key::F10),
+        "F11" => Some(Key::F11),
+        "F12" => Some(Key::F12),
+        _ => None,
+    }
+}
+
+fn parse_popup_combo(accel: &str) -> Option<PopupCombo> {
+    let mut combo = PopupCombo {
+        ctrl: false,
+        shift: false,
+        alt: false,
+        meta: false,
+        key: rdev::Key::KeyC,
+    };
+    let mut has_key = false;
+
+    for part in accel.split('+') {
+        match part.trim() {
+            "Ctrl" | "Control" => combo.ctrl = true,
+            "Shift" => combo.shift = true,
+            "Alt" => combo.alt = true,
+            "Super" | "Meta" | "Cmd" | "Command" => combo.meta = true,
+            "" => {}
+            other => {
+                combo.key = key_from_str(other)?;
+                has_key = true;
+            }
+        }
+    }
+
+    let has_modifier = combo.ctrl || combo.shift || combo.alt || combo.meta;
+    if has_key && has_modifier {
+        Some(combo)
+    } else {
+        None
+    }
+}
+
 const DEFAULT_OPEN_HOTKEY: &str = "Ctrl+Shift+T";
+#[cfg(target_os = "macos")]
+const DEFAULT_POPUP_HOTKEY: &str = "Super+C";
+#[cfg(not(target_os = "macos"))]
+const DEFAULT_POPUP_HOTKEY: &str = "Ctrl+C";
 const DOUBLE_PRESS_TIMEOUT_MS: u128 = 500;
 const POPUP_WIDTH: f64 = 380.0;
 const POPUP_HEIGHT: f64 = 280.0;
@@ -111,6 +216,44 @@ fn set_open_hotkey(app: AppHandle, accelerator: String) -> Result<(), String> {
     apply_open_hotkey(&app, &accelerator)
 }
 
+fn read_popup_hotkey(app: &AppHandle) -> String {
+    let path = match app.path().app_config_dir() {
+        Ok(dir) => dir.join("settings.json"),
+        Err(_) => return DEFAULT_POPUP_HOTKEY.to_string(),
+    };
+
+    let content = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return DEFAULT_POPUP_HOTKEY.to_string(),
+    };
+
+    serde_json::from_str::<serde_json::Value>(&content)
+        .ok()
+        .and_then(|json| json.get("popupHotkey").and_then(|v| v.as_str()).map(str::to_string))
+        .unwrap_or_else(|| DEFAULT_POPUP_HOTKEY.to_string())
+}
+
+fn apply_popup_hotkey(app: &AppHandle, accel: &str) -> Result<(), String> {
+    let combo = if accel.trim().is_empty() {
+        None
+    } else {
+        Some(parse_popup_combo(accel).ok_or_else(|| format!("Invalid popup hotkey: '{accel}'"))?)
+    };
+
+    if let Some(state) = app.try_state::<PopupHotkey>() {
+        if let Ok(mut guard) = state.0.lock() {
+            *guard = combo;
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+fn set_popup_hotkey(app: AppHandle, accelerator: String) -> Result<(), String> {
+    apply_popup_hotkey(&app, &accelerator)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -131,6 +274,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .manage(Mutex::new(CtrlCState { last_press: None }))
         .manage(OpenHotkey(Mutex::new(None)))
+        .manage(PopupHotkey(Mutex::new(Some(default_popup_combo()))))
         .invoke_handler(tauri::generate_handler![
             commands::translate::translate_text,
             commands::translate::validate_api_key,
@@ -146,6 +290,7 @@ pub fn run() {
             commands::store::load_settings,
             commands::updater::download_and_install_update,
             set_open_hotkey,
+            set_popup_hotkey,
         ])
         .setup(|app| {
             #[cfg(target_os = "linux")]
@@ -218,6 +363,11 @@ pub fn run() {
                 log::warn!("Failed to register open hotkey: {e}");
             }
 
+            let popup_hotkey = read_popup_hotkey(app.handle());
+            if let Err(e) = apply_popup_hotkey(app.handle(), &popup_hotkey) {
+                log::warn!("Failed to register popup hotkey: {e}");
+            }
+
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -246,23 +396,53 @@ fn setup_global_shortcut(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
 
     std::thread::spawn(move || {
         use rdev::{listen, EventType, Key};
-        let mut ctrl_down = false;
+        let mut ctrl = false;
+        let mut shift = false;
+        let mut alt = false;
+        let mut meta = false;
 
         if let Err(e) = listen(move |event| match event.event_type {
-            EventType::KeyPress(Key::ControlLeft)
-            | EventType::KeyPress(Key::ControlRight)
-            | EventType::KeyPress(Key::MetaLeft)
-            | EventType::KeyPress(Key::MetaRight) => {
-                ctrl_down = true;
+            EventType::KeyPress(Key::ControlLeft) | EventType::KeyPress(Key::ControlRight) => {
+                ctrl = true;
             }
-            EventType::KeyRelease(Key::ControlLeft)
-            | EventType::KeyRelease(Key::ControlRight)
-            | EventType::KeyRelease(Key::MetaLeft)
-            | EventType::KeyRelease(Key::MetaRight) => {
-                ctrl_down = false;
+            EventType::KeyRelease(Key::ControlLeft) | EventType::KeyRelease(Key::ControlRight) => {
+                ctrl = false;
             }
-            EventType::KeyPress(Key::KeyC) => {
-                if ctrl_down {
+            EventType::KeyPress(Key::ShiftLeft) | EventType::KeyPress(Key::ShiftRight) => {
+                shift = true;
+            }
+            EventType::KeyRelease(Key::ShiftLeft) | EventType::KeyRelease(Key::ShiftRight) => {
+                shift = false;
+            }
+            EventType::KeyPress(Key::Alt) | EventType::KeyPress(Key::AltGr) => {
+                alt = true;
+            }
+            EventType::KeyRelease(Key::Alt) | EventType::KeyRelease(Key::AltGr) => {
+                alt = false;
+            }
+            EventType::KeyPress(Key::MetaLeft) | EventType::KeyPress(Key::MetaRight) => {
+                meta = true;
+            }
+            EventType::KeyRelease(Key::MetaLeft) | EventType::KeyRelease(Key::MetaRight) => {
+                meta = false;
+            }
+            EventType::KeyPress(key) => {
+                let matches = app_handle
+                    .try_state::<PopupHotkey>()
+                    .and_then(|state| {
+                        state.0.lock().ok().and_then(|guard| {
+                            guard.as_ref().map(|combo| {
+                                key == combo.key
+                                    && ctrl == combo.ctrl
+                                    && shift == combo.shift
+                                    && alt == combo.alt
+                                    && meta == combo.meta
+                            })
+                        })
+                    })
+                    .unwrap_or(false);
+
+                if matches {
                     let now = std::time::Instant::now();
                     let mut trigger = false;
 

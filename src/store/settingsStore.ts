@@ -6,6 +6,9 @@ export type ProviderMode = "api" | "web";
 
 export const MIN_UI_SCALE = 0.7;
 export const MAX_UI_SCALE = 2;
+const IS_MAC =
+  typeof navigator !== "undefined" && /Mac/i.test(navigator.userAgent);
+const DEFAULT_POPUP_HOTKEY = IS_MAC ? "Super+C" : "Ctrl+C";
 const clampScale = (scale: number) =>
   Math.min(MAX_UI_SCALE, Math.max(MIN_UI_SCALE, scale));
 
@@ -16,6 +19,7 @@ const STORE_DEFAULTS = {
   activeApi: "google",
   providerModes: {} as Record<string, ProviderMode>,
   openHotkey: "Ctrl+Shift+T",
+  popupHotkey: DEFAULT_POPUP_HOTKEY,
   uiScale: 1,
   lastUpdateCheck: 0,
   popupSourceLang: "auto",
@@ -30,6 +34,7 @@ interface SettingsState {
   activeApi: ApiProvider;
   providerModes: Record<string, ProviderMode>;
   openHotkey: string;
+  popupHotkey: string;
   uiScale: number;
 
   setDarkMode: (dark: boolean) => void;
@@ -39,6 +44,7 @@ interface SettingsState {
   setActiveApi: (api: ApiProvider) => void;
   setProviderMode: (provider: string, mode: ProviderMode) => void;
   setOpenHotkey: (accel: string) => void;
+  setPopupHotkey: (accel: string) => void;
   setUiScale: (scale: number) => void;
   loadFromStore: () => Promise<void>;
   saveToStore: () => Promise<void>;
@@ -59,6 +65,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   activeApi: "google",
   providerModes: {},
   openHotkey: "Ctrl+Shift+T",
+  popupHotkey: DEFAULT_POPUP_HOTKEY,
   uiScale: 1,
 
   setDarkMode: (dark: boolean) => {
@@ -84,6 +91,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     })),
 
   setOpenHotkey: (accel: string) => set({ openHotkey: accel }),
+  setPopupHotkey: (accel: string) => set({ popupHotkey: accel }),
   setUiScale: (scale: number) =>
     set({ uiScale: Math.round(clampScale(scale) * 100) / 100 }),
 
@@ -100,6 +108,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
           activeApi: parsed.activeApi ?? "google",
           providerModes: { ...STORE_DEFAULTS.providerModes, ...(parsed.providerModes || {}) },
           openHotkey: parsed.openHotkey ?? STORE_DEFAULTS.openHotkey,
+          popupHotkey: parsed.popupHotkey ?? STORE_DEFAULTS.popupHotkey,
           uiScale: clampScale(parsed.uiScale ?? STORE_DEFAULTS.uiScale),
         });
         if (finalDarkMode) {
@@ -129,6 +138,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         activeApi: state.activeApi,
         providerModes: state.providerModes,
         openHotkey: state.openHotkey,
+        popupHotkey: state.popupHotkey,
         uiScale: state.uiScale,
       });
       await invoke("save_settings", { payload });
