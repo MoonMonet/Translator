@@ -9,7 +9,16 @@
     <p>A beautiful, minimalist, and smart desktop translator that lives quietly in your system tray. Highlight text anywhere, double-tap Ctrl+C, and a mini translator pops right up.</p>
   </description>
   <launchable type="desktop-id">dev.noxygalaxy.moontranslator.desktop</launchable>
+  <developer id="dev.noxygalaxy">
+    <name>Noxy Galaxy</name>
+  </developer>
+  <url type="homepage">https://github.com/MoonMonet/Translator</url>
+  <content_rating type="oars-1.1"/>
   <releases>
-    <release version="0.1.5" date="2026-08-04"/>
+    <release version="0.1.5" date="2026-08-04">
+      <description>
+        <p>Initial Flatpak packaging.</p>
+      </description>
+    </release>
   </releases>
 </component>
