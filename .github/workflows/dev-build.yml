@@ -185,12 +185,14 @@ jobs:
       - name: Diagnose Flatpak finish failure
         if: failure()
         run: |
-          sudo apt-get install -y appstream >/dev/null 2>&1 || true
-          if command -v appstreamcli >/dev/null 2>&1; then
-            MSG=$(appstreamcli validate --no-net flatpak/dev.noxygalaxy.moontranslator.metainfo.xml 2>&1 | tail -n 30 | sed ':a;N;$!ba;s/\n/%0A/g')
-            echo "::error::appstreamcli validate: $MSG"
-          fi
-          find build-flatpak/files/share -maxdepth 4 -name '*.xml*' 2>/dev/null | head -n 20 || true
+          set +e
+          OUT=$(flatpak-builder --user --finish-only --repo=flatpak-repo \
+            build-flatpak \
+            dev.noxygalaxy.moontranslator.yml 2>&1 | tail -n 80)
+          RC=$?
+          echo "finish rc=$RC"
+          MSG=$(echo "$OUT" | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error::flatpak-builder finish: $MSG"
 
       - name: Bundle Flatpak
         run: |
