@@ -1,16 +1,8 @@
 **Additions:**
 
-- **Linux Support:** Added Linux support to the app
-- **Content‑Security‑Policy:** Added proper CSP links
-- **Interface scale control:** New setting to control the interface scale
-- **Persistent UI scale:** The chosen interface scale is now saved and restored across sessions
-- **Window zoom:** Scale main window content via a zoom command
-
-**Fixes:**
-
-- **Security:** Trim unused webview capabilities (Thanks to [@Evgeshkaeqw](https://github.com/Evgeshkaeqw) for making a pull request for this)
-- **Security #2:** Secure keys by putting them into other place
-- **Security #3:** Replace open proxy command with scoped http plugin
-- **Security #4:** Harden update integrity checks
-- **Emoji in Changelog window:** Now emoji from changelog window doesn't use external source
-- **UI scale drift:** Round uiScale to avoid float drift
+- **Flatpak:** Added flatpak support for much easier download of the app (Gonna be uploaded to flathub later)
+- **Interface scale control:** New setting to control the interface scale (by [@gmcky](https://github.com/gmcky), Thanks a lot!)
+- **Window zoom:** Scale main window content via a zoom controls / Ctrl+Plus, Ctrl+Minus / Ctrl+0 to reset (by [@gmcky](https://github.com/gmcky), Thanks a lot!)
+- **Configurable global shortcut:** User-configurable global shortcut to open the main window, persisted, with an in-app recorder in Settings to rebind it (by [@gmcky](https://github.com/gmcky), Thanks a lot!)
+- **Configurable popup trigger:** The popup translate trigger is now configurable and persisted, with its own recorder. It was previously hardcoded to a double Ctrl+C. An empty value disables the popup, and the default is platform-aware (Cmd+C on macOS, Ctrl+C elsewhere). The rdev double-press mechanism and clipboard coupling are unchanged (by [@gmcky](https://github.com/gmcky), Thanks a lot!)
+- **Instant typing:** Opening the window (hotkey, tray, or the Open menu item) focuses the text input so typing can start right away. It is tied to the open action rather than window focus, so returning to the window by other means does not steal focus or clear a selection (by [@gmcky](https://github.com/gmcky), Thanks a lot!)
