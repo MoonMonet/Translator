@@ -62,6 +62,7 @@ pub fn run() {
             commands::window::close_popup_window,
             commands::window::hide_main_window,
             commands::window::open_main_window,
+            commands::window::set_main_zoom,
             commands::window::set_popup_pinned,
             commands::window::simulate_paste,
             commands::store::save_settings,

@@ -19,6 +19,9 @@ import {
   Loader2,
   Eye,
   EyeOff,
+  ZoomIn,
+  Minus,
+  Plus,
 } from "lucide-react";
 
 export default function SettingsPanel() {
@@ -35,6 +38,8 @@ export default function SettingsPanel() {
     setActiveApi,
     providerModes,
     setProviderMode,
+    uiScale,
+    setUiScale,
     saveToStore,
   } = useSettingsStore();
 
@@ -120,6 +125,14 @@ export default function SettingsPanel() {
 
     await saveToStore();
   }, [autostart, setAutostart, saveToStore]);
+
+  const handleScale = useCallback(
+    async (scale: number) => {
+      setUiScale(scale);
+      await saveToStore();
+    },
+    [setUiScale, saveToStore]
+  );
 
   const handleClearData = useCallback(async () => {
     try {
@@ -340,6 +353,38 @@ export default function SettingsPanel() {
                   <div className="md-switch-thumb" />
                 </div>
               </button>
+
+              <div className="md-card flex items-center justify-between">
+                <div className="flex items-center gap-3 text-sm text-foreground">
+                  <ZoomIn size={18} />
+                  Interface scale
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => handleScale(uiScale - 0.1)}
+                    className="md-icon-btn shrink-0"
+                    title="Decrease"
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <span className="text-xs font-mono text-secondary w-10 text-center">
+                    {Math.round(uiScale * 100)}%
+                  </span>
+                  <button
+                    onClick={() => handleScale(uiScale + 0.1)}
+                    className="md-icon-btn shrink-0"
+                    title="Increase"
+                  >
+                    <Plus size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleScale(1)}
+                    className="md-btn-tonal h-9 px-3 text-xs"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
             </div>
           </section>
 

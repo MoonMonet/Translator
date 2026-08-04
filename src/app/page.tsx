@@ -31,15 +31,59 @@ export default function Home() {
     swapLanguages,
   } = useTranslatorStore();
 
-  const { setSettingsOpen, apiKeys, loadFromStore, activeApi: settingsActiveApi, providerModes } =
+  const { setSettingsOpen, apiKeys, loadFromStore, activeApi: settingsActiveApi, providerModes, uiScale } =
     useSettingsStore();
 
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const zoomSaveRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [showChangelogModal, setShowChangelogModal] = useState(false);
+
+  const persistZoom = useCallback(() => {
+    clearTimeout(zoomSaveRef.current);
+    zoomSaveRef.current = setTimeout(
+      () => useSettingsStore.getState().saveToStore(),
+      400
+    );
+  }, []);
+
+  const applyZoomDelta = useCallback(
+    (delta: number) => {
+      const s = useSettingsStore.getState();
+      s.setUiScale(s.uiScale + delta);
+      persistZoom();
+    },
+    [persistZoom]
+  );
+
+  const resetZoom = useCallback(() => {
+    useSettingsStore.getState().setUiScale(1);
+    persistZoom();
+  }, [persistZoom]);
 
   useEffect(() => {
     loadFromStore();
   }, [loadFromStore]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        await invoke("set_main_zoom", { factor: uiScale });
+      } catch (e) {
+        console.log("Failed to apply zoom:", e);
+      }
+    })();
+  }, [uiScale]);
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      applyZoomDelta(e.deltaY < 0 ? 0.1 : -0.1);
+    };
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, [applyZoomDelta]);
 
   useEffect(() => {
     if (settingsActiveApi) {
@@ -142,11 +186,20 @@ export default function Home() {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
         doTranslate();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === "=" || e.key === "+")) {
+        e.preventDefault();
+        applyZoomDelta(0.1);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "-") {
+        e.preventDefault();
+        applyZoomDelta(-0.1);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "0") {
+        e.preventDefault();
+        resetZoom();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [doTranslate]);
+  }, [doTranslate, applyZoomDelta, resetZoom]);
 
   const [isSwapping, setIsSwapping] = useState(false);
   const [isResetting, setIsResetting] = useState(false);

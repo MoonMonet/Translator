@@ -145,6 +145,16 @@ pub async fn open_main_window(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub async fn set_main_zoom(app: AppHandle, factor: f64) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window
+            .set_zoom(factor)
+            .map_err(|e| format!("Failed to set zoom: {}", e))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn set_popup_pinned(app: AppHandle, pinned: bool) -> Result<(), String> {
     if let Some(popup) = app.get_webview_window("popup") {
         let _ = popup.set_always_on_top(pinned).inspect_err(|e| log::warn!("Failed to set always on top: {}", e));
