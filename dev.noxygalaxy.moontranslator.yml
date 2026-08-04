@@ -103,6 +103,8 @@ modules:
           - /lib/pkgconfig
           - /libexec
           - /share
+        config-opts:
+          - -DCMAKE_INSTALL_LIBDIR=lib
         sources:
           - type: git
             url: https://github.com/AyatanaIndicators/libayatana-indicator.git
