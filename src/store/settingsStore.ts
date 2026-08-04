@@ -15,6 +15,7 @@ const STORE_DEFAULTS = {
   apiKeys: { deepl: "", google: "", bing: "", lara: "", custom: "" },
   activeApi: "google",
   providerModes: {} as Record<string, ProviderMode>,
+  openHotkey: "Ctrl+Shift+T",
   uiScale: 1,
   lastUpdateCheck: 0,
   popupSourceLang: "auto",
@@ -28,6 +29,7 @@ interface SettingsState {
   apiKeys: Record<ApiProvider, string>;
   activeApi: ApiProvider;
   providerModes: Record<string, ProviderMode>;
+  openHotkey: string;
   uiScale: number;
 
   setDarkMode: (dark: boolean) => void;
@@ -36,6 +38,7 @@ interface SettingsState {
   setApiKey: (provider: ApiProvider, key: string) => void;
   setActiveApi: (api: ApiProvider) => void;
   setProviderMode: (provider: string, mode: ProviderMode) => void;
+  setOpenHotkey: (accel: string) => void;
   setUiScale: (scale: number) => void;
   loadFromStore: () => Promise<void>;
   saveToStore: () => Promise<void>;
@@ -55,6 +58,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   activeApi: "google",
   providerModes: {},
+  openHotkey: "Ctrl+Shift+T",
   uiScale: 1,
 
   setDarkMode: (dark: boolean) => {
@@ -79,6 +83,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       providerModes: { ...state.providerModes, [provider]: mode },
     })),
 
+  setOpenHotkey: (accel: string) => set({ openHotkey: accel }),
   setUiScale: (scale: number) =>
     set({ uiScale: Math.round(clampScale(scale) * 100) / 100 }),
 
@@ -94,6 +99,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
           apiKeys: { ...STORE_DEFAULTS.apiKeys, ...(parsed.apiKeys || {}) },
           activeApi: parsed.activeApi ?? "google",
           providerModes: { ...STORE_DEFAULTS.providerModes, ...(parsed.providerModes || {}) },
+          openHotkey: parsed.openHotkey ?? STORE_DEFAULTS.openHotkey,
           uiScale: clampScale(parsed.uiScale ?? STORE_DEFAULTS.uiScale),
         });
         if (finalDarkMode) {
@@ -122,6 +128,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         apiKeys: state.apiKeys,
         activeApi: state.activeApi,
         providerModes: state.providerModes,
+        openHotkey: state.openHotkey,
         uiScale: state.uiScale,
       });
       await invoke("save_settings", { payload });
