@@ -3,7 +3,7 @@
   <id>dev.noxygalaxy.moontranslator</id>
   <name>MoonTranslator</name>
   <summary>Minimalist Translation App</summary>
-  <metadata_license>GPL-3.0-only</metadata_license>
+  <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-only</project_license>
   <description>
     <p>A beautiful, minimalist, and smart desktop translator that lives quietly in your system tray. Highlight text anywhere, double-tap Ctrl+C, and a mini translator pops right up.</p>
