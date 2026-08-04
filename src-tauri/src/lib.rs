@@ -39,6 +39,24 @@ fn show_and_focus_window(app: &AppHandle, label: &str) {
     }
 }
 
+fn toggle_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let visible = window.is_visible().unwrap_or(false);
+        let focused = window.is_focused().unwrap_or(false);
+
+        if visible && focused {
+            let _ = window
+                .hide()
+                .inspect_err(|e| log::warn!("Failed to hide main window: {e}"));
+
+            #[cfg(target_os = "windows")]
+            let _ = window.set_skip_taskbar(true);
+        } else {
+            show_and_focus_window(app, "main");
+        }
+    }
+}
+
 fn read_open_hotkey(app: &AppHandle) -> String {
     let path = match app.path().app_config_dir() {
         Ok(dir) => dir.join("settings.json"),
@@ -74,7 +92,7 @@ fn apply_open_hotkey(app: &AppHandle, accel: &str) -> Result<(), String> {
 
     gs.on_shortcut(accel, |app, _shortcut, event| {
         if event.state == ShortcutState::Pressed {
-            show_and_focus_window(app, "main");
+            toggle_main_window(app);
         }
     })
     .map_err(|e| format!("Failed to register shortcut '{accel}': {e}"))?;
