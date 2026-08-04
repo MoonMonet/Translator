@@ -6,6 +6,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Manager, WebviewUrl, WebviewWindowBuilder,
 };
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 mod commands;
 
@@ -13,6 +14,9 @@ struct CtrlCState {
     last_press: Option<Instant>,
 }
 
+struct OpenHotkey(Mutex<Option<String>>);
+
+const DEFAULT_OPEN_HOTKEY: &str = "Ctrl+Shift+T";
 const DOUBLE_PRESS_TIMEOUT_MS: u128 = 500;
 const POPUP_WIDTH: f64 = 380.0;
 const POPUP_HEIGHT: f64 = 280.0;
@@ -35,6 +39,60 @@ fn show_and_focus_window(app: &AppHandle, label: &str) {
     }
 }
 
+fn read_open_hotkey(app: &AppHandle) -> String {
+    let path = match app.path().app_config_dir() {
+        Ok(dir) => dir.join("settings.json"),
+        Err(_) => return DEFAULT_OPEN_HOTKEY.to_string(),
+    };
+
+    let content = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return DEFAULT_OPEN_HOTKEY.to_string(),
+    };
+
+    serde_json::from_str::<serde_json::Value>(&content)
+        .ok()
+        .and_then(|json| json.get("openHotkey").and_then(|v| v.as_str()).map(str::to_string))
+        .unwrap_or_else(|| DEFAULT_OPEN_HOTKEY.to_string())
+}
+
+fn apply_open_hotkey(app: &AppHandle, accel: &str) -> Result<(), String> {
+    let gs = app.global_shortcut();
+
+    if let Some(state) = app.try_state::<OpenHotkey>() {
+        if let Ok(mut guard) = state.0.lock() {
+            if let Some(prev) = guard.take() {
+                let _ = gs.unregister(prev.as_str());
+            }
+        }
+    }
+
+    let accel = accel.trim();
+    if accel.is_empty() {
+        return Ok(());
+    }
+
+    gs.on_shortcut(accel, |app, _shortcut, event| {
+        if event.state == ShortcutState::Pressed {
+            show_and_focus_window(app, "main");
+        }
+    })
+    .map_err(|e| format!("Failed to register shortcut '{accel}': {e}"))?;
+
+    if let Some(state) = app.try_state::<OpenHotkey>() {
+        if let Ok(mut guard) = state.0.lock() {
+            *guard = Some(accel.to_string());
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+fn set_open_hotkey(app: AppHandle, accelerator: String) -> Result<(), String> {
+    apply_open_hotkey(&app, &accelerator)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -54,6 +112,7 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_process::init())
         .manage(Mutex::new(CtrlCState { last_press: None }))
+        .manage(OpenHotkey(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             commands::translate::translate_text,
             commands::translate::validate_api_key,
@@ -68,6 +127,7 @@ pub fn run() {
             commands::store::save_settings,
             commands::store::load_settings,
             commands::updater::download_and_install_update,
+            set_open_hotkey,
         ])
         .setup(|app| {
             #[cfg(target_os = "linux")]
@@ -134,6 +194,11 @@ pub fn run() {
                 .build(app)?;
 
             setup_global_shortcut(app.handle())?;
+
+            let open_hotkey = read_open_hotkey(app.handle());
+            if let Err(e) = apply_open_hotkey(app.handle(), &open_hotkey) {
+                log::warn!("Failed to register open hotkey: {e}");
+            }
 
             Ok(())
         })
