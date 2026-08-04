@@ -79,7 +79,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       providerModes: { ...state.providerModes, [provider]: mode },
     })),
 
-  setUiScale: (scale: number) => set({ uiScale: clampScale(scale) }),
+  setUiScale: (scale: number) =>
+    set({ uiScale: Math.round(clampScale(scale) * 100) / 100 }),
 
   loadFromStore: async () => {
     try {
