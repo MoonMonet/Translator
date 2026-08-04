@@ -19,9 +19,7 @@ flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flath
 echo "==> Installing runtimes (first run downloads a few GB)"
 flatpak install --user --noninteractive flathub \
   "org.gnome.Platform//${RUNTIME_VERSION}" \
-  "org.gnome.Sdk//${RUNTIME_VERSION}" \
-  "org.freedesktop.Sdk.Extension.rust-stable//${RUNTIME_VERSION}" \
-  "org.freedesktop.Sdk.Extension.node24//${RUNTIME_VERSION}"
+  "org.gnome.Sdk//${RUNTIME_VERSION}"
 
 echo "==> Building ${APP_ID}"
 flatpak-builder --user --force-clean --install --noninteractive "$BUILD_DIR" "$MANIFEST"

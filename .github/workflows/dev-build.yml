@@ -169,13 +169,11 @@ jobs:
       - name: Add flathub remote
         run: flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-      - name: Install runtime and SDK extensions
+      - name: Install runtime and SDK
         run: |
           flatpak install --user --noninteractive flathub \
             org.gnome.Platform//48 \
-            org.gnome.Sdk//48 \
-            org.freedesktop.Sdk.Extension.rust-stable//48 \
-            org.freedesktop.Sdk.Extension.node24//48
+            org.gnome.Sdk//48
 
       - name: Build Flatpak
         run: |
