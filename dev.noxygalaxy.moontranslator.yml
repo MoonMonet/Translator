@@ -32,6 +32,7 @@ modules:
       - -DENABLE_BINDINGS_MONO=NO
       - -DENABLE_BINDINGS_VALA=NO
       - -DENABLE_GTKDOC=NO
+      - -DCMAKE_INSTALL_LIBDIR=lib
     sources:
       - type: git
         url: https://github.com/AyatanaIndicators/libayatana-appindicator.git
@@ -87,6 +88,7 @@ modules:
           - /lib/pkgconfig
         config-opts:
           - -DENABLE_INTROSPECTION=OFF
+          - -DCMAKE_INSTALL_LIBDIR=lib
         sources:
           - type: git
             url: https://github.com/AyatanaIndicators/ayatana-ido.git
