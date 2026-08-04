@@ -18,14 +18,20 @@ export default function TranslatorInput() {
   }, [sourceText]);
 
   useEffect(() => {
+    let mounted = true;
     let unlisten: (() => void) | undefined;
     (async () => {
       try {
         const { listen } = await import("@tauri-apps/api/event");
-        unlisten = await listen("focus-input", () => textareaRef.current?.focus());
+        const fn = await listen("focus-input", () => textareaRef.current?.focus());
+        if (mounted) unlisten = fn;
+        else fn();
       } catch {}
     })();
-    return () => unlisten?.();
+    return () => {
+      mounted = false;
+      unlisten?.();
+    };
   }, []);
 
   return (
