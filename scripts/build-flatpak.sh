@@ -22,7 +22,10 @@ flatpak install --user --noninteractive flathub \
   "org.gnome.Sdk//${RUNTIME_VERSION}"
 
 echo "==> Building ${APP_ID}"
-flatpak-builder --user --force-clean --install --noninteractive "$BUILD_DIR" "$MANIFEST"
+flatpak-builder --user --install --ccache --install-deps-from=flathub --force-clean \
+  --repo="$ROOT_DIR/flatpak-repo" \
+  "$BUILD_DIR" \
+  "$MANIFEST"
 
 echo ""
 echo "==> Done. Run with: flatpak run ${APP_ID}"

@@ -177,7 +177,7 @@ jobs:
 
       - name: Build Flatpak
         run: |
-          flatpak-builder --user --ccache --force-clean \
+          flatpak-builder --user --ccache --install-deps-from=flathub --force-clean \
             --repo=flatpak-repo \
             build-flatpak \
             dev.noxygalaxy.moontranslator.yml
