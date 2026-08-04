@@ -12,6 +12,8 @@ import {
   Moon,
   Sun,
   Key,
+  Keyboard,
+  Copy,
   Monitor,
   FileText,
   Trash2,
@@ -38,12 +40,18 @@ export default function SettingsPanel() {
     setActiveApi,
     providerModes,
     setProviderMode,
+    openHotkey,
+    setOpenHotkey,
+    popupHotkey,
+    setPopupHotkey,
     uiScale,
     setUiScale,
     saveToStore,
   } = useSettingsStore();
 
   const [showChangelogModal, setShowChangelogModal] = useState(false);
+  const [recordingHotkey, setRecordingHotkey] = useState(false);
+  const [recordingPopupHotkey, setRecordingPopupHotkey] = useState(false);
 
   const { setActiveApi: setTranslatorApi } = useTranslatorStore();
 
@@ -132,6 +140,94 @@ export default function SettingsPanel() {
       await saveToStore();
     },
     [setUiScale, saveToStore]
+  );
+
+  const applyOpenHotkey = useCallback(
+    async (accel: string) => {
+      setOpenHotkey(accel);
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        await invoke("set_open_hotkey", { accelerator: accel });
+      } catch (e) {
+        console.log("Failed to set open hotkey:", e);
+      }
+      await saveToStore();
+    },
+    [setOpenHotkey, saveToStore]
+  );
+
+  const handleHotkeyKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!recordingHotkey) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.key === "Escape") {
+        setRecordingHotkey(false);
+        return;
+      }
+
+      const mods: string[] = [];
+      if (e.ctrlKey) mods.push("Ctrl");
+      if (e.shiftKey) mods.push("Shift");
+      if (e.altKey) mods.push("Alt");
+      if (e.metaKey) mods.push("Super");
+
+      let key: string | null = null;
+      if (/^Key[A-Z]$/.test(e.code)) key = e.code.slice(3);
+      else if (/^Digit[0-9]$/.test(e.code)) key = e.code.slice(5);
+      else if (/^F([1-9]|1[0-2])$/.test(e.code)) key = e.code;
+
+      if (!key || mods.length === 0) return;
+
+      setRecordingHotkey(false);
+      applyOpenHotkey([...mods, key].join("+"));
+    },
+    [recordingHotkey, applyOpenHotkey]
+  );
+
+  const applyPopupHotkey = useCallback(
+    async (accel: string) => {
+      setPopupHotkey(accel);
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        await invoke("set_popup_hotkey", { accelerator: accel });
+      } catch (e) {
+        console.log("Failed to set popup hotkey:", e);
+      }
+      await saveToStore();
+    },
+    [setPopupHotkey, saveToStore]
+  );
+
+  const handlePopupHotkeyKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!recordingPopupHotkey) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.key === "Escape") {
+        setRecordingPopupHotkey(false);
+        return;
+      }
+
+      const mods: string[] = [];
+      if (e.ctrlKey) mods.push("Ctrl");
+      if (e.shiftKey) mods.push("Shift");
+      if (e.altKey) mods.push("Alt");
+      if (e.metaKey) mods.push("Super");
+
+      let key: string | null = null;
+      if (/^Key[A-Z]$/.test(e.code)) key = e.code.slice(3);
+      else if (/^Digit[0-9]$/.test(e.code)) key = e.code.slice(5);
+      else if (/^F([1-9]|1[0-2])$/.test(e.code)) key = e.code;
+
+      if (!key || mods.length === 0) return;
+
+      setRecordingPopupHotkey(false);
+      applyPopupHotkey([...mods, key].join("+"));
+    },
+    [recordingPopupHotkey, applyPopupHotkey]
   );
 
   const handleClearData = useCallback(async () => {
@@ -386,6 +482,71 @@ export default function SettingsPanel() {
                 </div>
               </div>
             </div>
+          </section>
+
+          <div className="md-divider" />
+
+          <section>
+            <h3 className="text-sm font-medium mb-4 text-primary tracking-wide">
+              Shortcut
+            </h3>
+
+            <div className="md-card flex items-center justify-between">
+              <div className="flex items-center gap-3 text-sm text-foreground">
+                <Keyboard size={18} />
+                Open MoonTranslator
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setRecordingHotkey(true)}
+                  onKeyDown={handleHotkeyKeyDown}
+                  onBlur={() => setRecordingHotkey(false)}
+                  className="md-btn-tonal h-9 px-3.5 text-xs min-w-24 justify-center"
+                >
+                  {recordingHotkey
+                    ? "Press keys..."
+                    : openHotkey || "None"}
+                </button>
+                <button
+                  onClick={() => applyOpenHotkey("")}
+                  className="md-icon-btn shrink-0"
+                  title="Clear shortcut"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="md-card flex items-center justify-between mt-2">
+              <div className="flex items-center gap-3 text-sm text-foreground">
+                <Copy size={18} />
+                Popup (double-press)
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setRecordingPopupHotkey(true)}
+                  onKeyDown={handlePopupHotkeyKeyDown}
+                  onBlur={() => setRecordingPopupHotkey(false)}
+                  className="md-btn-tonal h-9 px-3.5 text-xs min-w-24 justify-center"
+                >
+                  {recordingPopupHotkey
+                    ? "Press keys..."
+                    : popupHotkey || "None"}
+                </button>
+                <button
+                  onClick={() => applyPopupHotkey("")}
+                  className="md-icon-btn shrink-0"
+                  title="Clear shortcut"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs text-secondary mt-2 px-1">
+              Popup translates the clipboard. Make sure your shortcut copies the
+              selection first (for example Ctrl+C).
+            </p>
           </section>
 
           <div className="md-divider" />

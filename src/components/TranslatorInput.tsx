@@ -17,6 +17,23 @@ export default function TranslatorInput() {
     }
   }, [sourceText]);
 
+  useEffect(() => {
+    let mounted = true;
+    let unlisten: (() => void) | undefined;
+    (async () => {
+      try {
+        const { listen } = await import("@tauri-apps/api/event");
+        const fn = await listen("focus-input", () => textareaRef.current?.focus());
+        if (mounted) unlisten = fn;
+        else fn();
+      } catch {}
+    })();
+    return () => {
+      mounted = false;
+      unlisten?.();
+    };
+  }, []);
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <textarea
