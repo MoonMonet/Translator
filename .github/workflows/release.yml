@@ -57,6 +57,9 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install
 
+      - name: Sync version to release tag
+        run: node scripts/set-version.mjs "${{ github.event.inputs.version }}"
+
       - name: Build Tauri App
         run: pnpm tauri build --bundles deb rpm appimage
         env:
@@ -107,6 +110,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Sync version to release tag
+        run: node scripts/set-version.mjs "${{ github.event.inputs.version }}"
 
       - name: Install flatpak tooling
         run: |
@@ -188,6 +199,9 @@ jobs:
 
       - name: Install frontend dependencies
         run: pnpm install
+
+      - name: Sync version to release tag
+        run: node scripts/set-version.mjs "${{ github.event.inputs.version }}"
 
       - name: Build Tauri App
         run: pnpm tauri build
