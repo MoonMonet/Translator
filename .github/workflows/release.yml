@@ -173,6 +173,8 @@ jobs:
       - build-flatpak
     permissions:
       contents: write
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
     steps:
       - name: Checkout repository
@@ -273,6 +275,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Notify Discord
+        if: ${{ env.DISCORD_WEBHOOK_URL != '' }}
         shell: pwsh
         run: |
           $version = "${{ github.event.inputs.version }}"
@@ -294,4 +297,4 @@ jobs:
             )
           } | ConvertTo-Json -Depth 5
 
-          Invoke-RestMethod -Uri "${{ secrets.DISCORD_WEBHOOK_URL }}" -Method Post -ContentType "application/json" -Body $payload
+          Invoke-RestMethod -Uri $env:DISCORD_WEBHOOK_URL -Method Post -ContentType "application/json" -Body $payload
