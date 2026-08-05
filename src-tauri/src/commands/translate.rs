@@ -24,6 +24,7 @@ pub struct TranslateRequest {
 pub struct TranslateResponse {
     pub translated_text: String,
     pub detected_language: Option<String>,
+    pub alternatives: Vec<String>,
 }
 
 #[tauri::command]
@@ -74,6 +75,8 @@ struct DeepLResponse {
 struct DeepLTranslation {
     text: String,
     detected_source_language: Option<String>,
+    #[serde(default)]
+    alternatives: Vec<String>,
 }
 
 impl TranslationProvider for Deepl {
@@ -127,6 +130,7 @@ impl TranslationProvider for Deepl {
                 .detected_source_language
                 .as_ref()
                 .map(|s| s.to_lowercase()),
+            alternatives: translation.alternatives.clone(),
         })
     }
 
@@ -164,6 +168,7 @@ impl TranslationProvider for Google {
                 ("tl", &req.to),
                 ("dt", "t"),
                 ("dt", "bd"),
+                ("dt", "at"),
                 ("q", &req.text),
             ])
             .send()
@@ -199,9 +204,69 @@ impl TranslationProvider for Google {
             .and_then(|v| v.as_str())
             .map(|s| s.to_lowercase());
 
+        let alternatives = {
+            let mut seen = std::collections::HashSet::new();
+            let mut alts: Vec<String> = Vec::new();
+
+            let add_alt = |s: &str, seen: &mut std::collections::HashSet<String>, alts: &mut Vec<String>| {
+                let cleaned = s.trim().to_string();
+                if !cleaned.is_empty() && cleaned != translated_text && seen.insert(cleaned.clone()) {
+                    alts.push(cleaned);
+                }
+            };
+
+            if let Some(groups) = body.get(1).and_then(|v| v.as_array()) {
+                for group in groups {
+                    if let Some(terms) = group.get(1).and_then(|t| t.as_array()) {
+                        for term in terms {
+                            if let Some(s) = term.as_str() {
+                                add_alt(s, &mut seen, &mut alts);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if let Some(phrase_groups) = body.get(5).and_then(|v| v.as_array()) {
+                for group in phrase_groups {
+                    if let Some(terms) = group.get(2).and_then(|t| t.as_array()) {
+                        for term in terms {
+                            if let Some(s) = term.get(0).and_then(|t| t.as_str()) {
+                                add_alt(s, &mut seen, &mut alts);
+                            }
+                        }
+                    }
+                }
+            }
+
+            fn extract_strings(v: &serde_json::Value, seen: &mut std::collections::HashSet<String>, alts: &mut Vec<String>, main_text: &str) {
+                match v {
+                    serde_json::Value::String(s) => {
+                        let cleaned = s.trim().to_string();
+                        if !cleaned.is_empty() && cleaned.len() > 1 && cleaned != main_text && seen.insert(cleaned.clone()) {
+                            alts.push(cleaned);
+                        }
+                    }
+                    serde_json::Value::Array(arr) => {
+                        for item in arr {
+                            extract_strings(item, seen, alts, main_text);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            if let Some(extra) = body.get(6).or_else(|| body.get(4)) {
+                extract_strings(extra, &mut seen, &mut alts, &translated_text);
+            }
+
+            alts
+        };
+
         Ok(TranslateResponse {
             translated_text,
             detected_language,
+            alternatives,
         })
     }
 
@@ -285,6 +350,7 @@ impl TranslationProvider for Bing {
                 .detected_language
                 .as_ref()
                 .map(|d| d.language.to_lowercase()),
+            alternatives: Vec::new(),
         })
     }
 
@@ -350,6 +416,7 @@ impl TranslationProvider for Lara {
                 .detected_language
                 .or_else(|| body.data.as_ref().and_then(|d| d.detected_language.clone()))
                 .map(|s| s.to_lowercase()),
+            alternatives: Vec::new(),
         })
     }
 

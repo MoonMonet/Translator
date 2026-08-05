@@ -59,6 +59,7 @@ interface TranslatorState {
   activeApi: ApiProvider;
   charCount: number;
   wordCount: number;
+  alternatives: string[];
 
   setSourceText: (text: string) => void;
   setTranslatedText: (text: string) => void;
@@ -69,6 +70,7 @@ interface TranslatorState {
   setDetectedLanguage: (lang: string | null) => void;
   setAutoTranslate: (auto: boolean) => void;
   setActiveApi: (api: ApiProvider) => void;
+  setAlternatives: (alternatives: string[]) => void;
   swapLanguages: () => void;
   clearAll: () => void;
 }
@@ -85,6 +87,7 @@ export const useTranslatorStore = create<TranslatorState>((set, get) => ({
   activeApi: "google",
   charCount: 0,
   wordCount: 0,
+  alternatives: [],
 
   setSourceText: (text: string) =>
     set({
@@ -102,6 +105,7 @@ export const useTranslatorStore = create<TranslatorState>((set, get) => ({
   setDetectedLanguage: (lang: string | null) => set({ detectedLanguage: lang }),
   setAutoTranslate: (auto: boolean) => set({ autoTranslate: auto }),
   setActiveApi: (api: ApiProvider) => set({ activeApi: api }),
+  setAlternatives: (alternatives: string[]) => set({ alternatives }),
 
   swapLanguages: () => {
     const state = get();
@@ -122,5 +126,6 @@ export const useTranslatorStore = create<TranslatorState>((set, get) => ({
       detectedLanguage: null,
       charCount: 0,
       wordCount: 0,
+      alternatives: [],
     }),
 }));

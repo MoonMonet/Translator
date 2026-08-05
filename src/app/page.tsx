@@ -27,6 +27,7 @@ export default function Home() {
     setIsTranslating,
     setError,
     setDetectedLanguage,
+    setAlternatives,
     setAutoTranslate,
     swapLanguages,
   } = useTranslatorStore();
@@ -130,6 +131,7 @@ export default function Home() {
 
     if (!state.sourceText.trim()) {
       setTranslatedText("");
+      setAlternatives([]);
       return;
     }
 
@@ -144,6 +146,7 @@ export default function Home() {
 
     setIsTranslating(true);
     setError(null);
+    setAlternatives([]);
 
     try {
       const result = await translateText(
@@ -155,6 +158,7 @@ export default function Home() {
         isFree
       );
       setTranslatedText(result.translatedText);
+      setAlternatives(result.alternatives);
       if (result.detectedLanguage) {
         setDetectedLanguage(result.detectedLanguage);
       }
@@ -163,7 +167,7 @@ export default function Home() {
     } finally {
       setIsTranslating(false);
     }
-  }, [setTranslatedText, setIsTranslating, setError, setDetectedLanguage]);
+  }, [setTranslatedText, setIsTranslating, setError, setDetectedLanguage, setAlternatives]);
 
   useEffect(() => {
     if (!autoTranslate || !sourceText.trim()) return;
@@ -178,8 +182,9 @@ export default function Home() {
     if (!sourceText.trim()) {
       setTranslatedText("");
       setError(null);
+      setAlternatives([]);
     }
-  }, [sourceText, setTranslatedText, setError]);
+  }, [sourceText, setTranslatedText, setError, setAlternatives]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

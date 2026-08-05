@@ -4,6 +4,7 @@ import { Credentials, Translator } from "@translated/lara";
 export interface TranslationResult {
   translatedText: string;
   detectedLanguage: string | null;
+  alternatives: string[];
 }
 
 export async function translateText(
@@ -15,7 +16,7 @@ export async function translateText(
   useFreeApi: boolean = false
 ): Promise<TranslationResult> {
   if (!text.trim()) {
-    return { translatedText: "", detectedLanguage: null };
+    return { translatedText: "", detectedLanguage: null, alternatives: [] };
   }
 
   const isFree =
@@ -57,6 +58,7 @@ export async function translateText(
       return {
         translatedText,
         detectedLanguage,
+        alternatives: [],
       };
     } catch (e: unknown) {
       throw new Error((e as Error)?.message || "Lara Translation failed");
@@ -74,9 +76,16 @@ export async function translateText(
         throw new Error(`Custom API returned ${resp.status} ${resp.statusText}`);
       }
       const data = await resp.json();
+      const rawAlternatives = Array.isArray(data.alternatives)
+        ? (data.alternatives as unknown[])
+        : [];
       return {
         translatedText: data.translatedText || data.translation || data.text || JSON.stringify(data),
         detectedLanguage: data.detectedLanguage || data.detected_language || null,
+        alternatives: rawAlternatives
+          .filter((a): a is string => typeof a === "string")
+          .map((a) => a.trim())
+          .filter((a) => a.length > 0),
       };
     } catch (e: unknown) {
       throw new Error((e as Error)?.message || "Custom API Translation failed");
@@ -88,6 +97,7 @@ export async function translateText(
     const result = await invoke<{
       translated_text: string;
       detected_language: string | null;
+      alternatives: string[];
     }>("translate_text", {
       request: { text, from, to, api, api_key: apiKey, use_free_api: useFreeApi },
     });
@@ -95,6 +105,7 @@ export async function translateText(
     return {
       translatedText: result.translated_text,
       detectedLanguage: result.detected_language,
+      alternatives: Array.isArray(result.alternatives) ? result.alternatives : [],
     };
   } catch (e) {
     throw new Error(
