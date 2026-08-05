@@ -444,10 +444,10 @@ fn setup_global_shortcut(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
                         state.0.lock().ok().and_then(|guard| {
                             guard.as_ref().map(|combo| {
                                 key == combo.key
-                                    && ctrl == combo.ctrl
-                                    && shift == combo.shift
-                                    && alt == combo.alt
-                                    && meta == combo.meta
+                                    && (ctrl || !combo.ctrl)
+                                    && (shift || !combo.shift)
+                                    && (alt || !combo.alt)
+                                    && (meta || !combo.meta)
                             })
                         })
                     })
