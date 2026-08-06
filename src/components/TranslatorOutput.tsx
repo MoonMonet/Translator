@@ -37,7 +37,7 @@ function WordTokenWithPopup({
   }, [isOpen]);
 
   return (
-    <span ref={tokenRef} className="relative inline-block">
+    <span ref={tokenRef} className="relative inline-block max-w-full break-words [overflow-wrap:anywhere]">
       <span
         onClick={onClick}
         className={`transition-all duration-150 rounded px-0.5 -mx-0.5 cursor-pointer inline ${
@@ -200,7 +200,7 @@ function InteractiveTranslatedText({
   };
 
   return (
-    <div ref={containerRef} className="relative inline-block w-full leading-relaxed">
+    <div ref={containerRef} className="relative w-full leading-relaxed break-words [overflow-wrap:anywhere]">
       {tokens.map((token, idx) => {
         const isWhitespace = /^\s+$/.test(token);
         if (isWhitespace) {
@@ -254,7 +254,7 @@ export default function TranslatorOutput() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0 relative overflow-hidden" style={{ background: "transparent" }}>
-      <div className="flex-1 p-5 min-h-30 overflow-y-auto text-[15px] leading-relaxed tracking-wide text-foreground">
+      <div className="flex-1 p-5 min-h-0 overflow-y-auto overflow-x-hidden break-words text-[15px] leading-relaxed tracking-wide text-foreground">
         {isTranslating ? (
           <div className="flex flex-col gap-3 animate-fade-in">
             <div className="skeleton h-4 w-full" />
@@ -300,7 +300,7 @@ export default function TranslatorOutput() {
       </div>
 
       {translatedText && !isTranslating && (
-        <div className="shrink-0 flex items-center justify-end px-6 py-3 pb-16 md:pb-6">
+        <div className="shrink-0 flex items-center justify-end px-6 py-3 pb-6">
           <button
             onClick={handleCopy}
             className="md-chip state-layer"

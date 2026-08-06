@@ -10,14 +10,6 @@ export default function TranslatorInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height =
-        Math.max(120, textareaRef.current.scrollHeight) + "px";
-    }
-  }, [sourceText]);
-
-  useEffect(() => {
     let mounted = true;
     let unlisten: (() => void) | undefined;
     (async () => {
@@ -41,12 +33,12 @@ export default function TranslatorInput() {
         value={sourceText}
         onChange={(e) => setSourceText(e.target.value)}
         placeholder="Enter text to translate..."
-        className="flex-1 w-full resize-none focus:outline-none min-h-30 bg-transparent text-foreground p-5 text-[15px] leading-relaxed tracking-wide caret-primary"
+        className="flex-1 w-full resize-none focus:outline-none min-h-0 bg-transparent text-foreground p-5 text-[15px] leading-relaxed tracking-wide caret-primary"
         spellCheck={false}
         autoFocus
       />
       <div
-        className="flex items-center justify-between px-6 shrink-0 h-17 opacity-80"
+        className="flex items-center justify-between px-6 py-3 shrink-0 opacity-80"
       >
         <div
           className="flex items-center gap-3 text-xs font-mono text-secondary tracking-widest"
