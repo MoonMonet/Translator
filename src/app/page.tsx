@@ -389,7 +389,8 @@ export default function Home() {
         <span
           className="text-xs font-mono text-secondary tracking-widest"
         >
-          {isTranslating ? "Translating..." : "Ready"} — Ctrl+Enter to translate
+          {isTranslating ? "Translating..." : "Ready"}
+          {!autoTranslate && " — Ctrl+Enter to translate"}
         </span>
         <span>
           {!apiKeys[activeApi] && activeApi !== "google" && activeApi !== "bing" && providerModes[activeApi] !== "web" && (
