@@ -135,72 +135,71 @@ async fn install_update_windows(
         .unwrap_or("MoonTranslator.exe")
         .to_string();
 
-    let script_content = format!(
-        r#"
+    let script_content = r#"
 Clear-Host
 $host.UI.RawUI.WindowTitle = "MoonTranslator Update"
 
 $supportsRGB = $PSVersionTable.PSVersion.Major -ge 6
 
-if ($supportsRGB) {{
+if ($supportsRGB) {
     $InfoPrefix = "`e[38;2;200;162;200m"
     $SepPrefix = "`e[38;2;150;150;150m"
     $ErrorPrefix = "`e[38;2;255;120;120m"
     $WarnPrefix = "`e[38;2;255;200;100m"
     $ResetColor = "`e[0m"
-}} else {{
+} else {
     $InfoColor = [System.ConsoleColor]::Magenta
     $SepColor = [System.ConsoleColor]::DarkGray
     $ErrorColor = [System.ConsoleColor]::Red
     $WarnColor = [System.ConsoleColor]::Yellow
-}}
+}
 
-function Write-Log {{
+function Write-Log {
     param([string]$Level, [string]$Message)
-    if ($supportsRGB) {{
-        switch ($Level) {{
-            "INFO"  {{ Write-Host "$($InfoPrefix)INFO$($ResetColor)$($SepPrefix) | $($ResetColor)$Message" }}
-            "WARN"  {{ Write-Host "$($WarnPrefix)WARN$($ResetColor)$($SepPrefix) | $($ResetColor)$Message" }}
-            default {{ Write-Host "$($ErrorPrefix)ERROR$($ResetColor)$($SepPrefix) | $($ResetColor)$Message" }}
-        }}
-    }} else {{
-        switch ($Level) {{
-            "INFO"  {{ Write-Host "INFO" -ForegroundColor $InfoColor -NoNewline }}
-            "WARN"  {{ Write-Host "WARN" -ForegroundColor $WarnColor -NoNewline }}
-            default {{ Write-Host "ERROR" -ForegroundColor $ErrorColor -NoNewline }}
-        }}
+    if ($supportsRGB) {
+        switch ($Level) {
+            "INFO"  { Write-Host "$($InfoPrefix)INFO$($ResetColor)$($SepPrefix) | $($ResetColor)$Message" }
+            "WARN"  { Write-Host "$($WarnPrefix)WARN$($ResetColor)$($SepPrefix) | $($ResetColor)$Message" }
+            default { Write-Host "$($ErrorPrefix)ERROR$($ResetColor)$($SepPrefix) | $($ResetColor)$Message" }
+        }
+    } else {
+        switch ($Level) {
+            "INFO"  { Write-Host "INFO" -ForegroundColor $InfoColor -NoNewline }
+            "WARN"  { Write-Host "WARN" -ForegroundColor $WarnColor -NoNewline }
+            default { Write-Host "ERROR" -ForegroundColor $ErrorColor -NoNewline }
+        }
         Write-Host " | " -ForegroundColor $SepColor -NoNewline
         Write-Host $Message
-    }}
-}}
+    }
+}
 
-$zipPath = "{zip}"
-$appDir = "{app}"
-$exeName = "{exe}"
+$zipPath = $args[0]
+$appDir = $args[1]
+$exeName = $args[2]
 
-try {{
+try {
     Write-Log "INFO" "Waiting for MoonTranslator to close..."
 
     $timeout = 30
     $elapsed = 0
-    while ($elapsed -lt $timeout) {{
+    while ($elapsed -lt $timeout) {
         $procs = Get-Process -Name ($exeName -replace '\.exe$','') -ErrorAction SilentlyContinue
-        if (-not $procs) {{ break }}
+        if (-not $procs) { break }
         Start-Sleep -Milliseconds 500
         $elapsed += 0.5
-        if ($elapsed % 5 -eq 0) {{
+        if ($elapsed % 5 -eq 0) {
             Write-Log "WARN" "Still waiting for process to exit... ($elapsed s)"
-        }}
-    }}
+        }
+    }
 
-    if ($elapsed -ge $timeout) {{
+    if ($elapsed -ge $timeout) {
         Write-Log "WARN" "Process did not exit in $timeout seconds, attempting to kill..."
         Stop-Process -Name ($exeName -replace '\.exe$','') -Force -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 2
-    }} else {{
+    } else {
         Write-Log "INFO" "Process exited after $elapsed seconds"
         Start-Sleep -Seconds 1
-    }}
+    }
 
     Write-Log "INFO" "Extracting update package to temp directory..."
 
@@ -212,14 +211,14 @@ try {{
     # Handle nested directory: if the zip contains a single top-level folder, use its contents
     $sourceDir = $extractFolder
     $topItems = Get-ChildItem -Path $extractFolder
-    if ($topItems.Count -eq 1 -and $topItems[0].PSIsContainer) {{
+    if ($topItems.Count -eq 1 -and $topItems[0].PSIsContainer) {
         $nested = $topItems[0].FullName
         $nestedExe = Join-Path $nested $exeName
-        if (Test-Path $nestedExe) {{
+        if (Test-Path $nestedExe) {
             Write-Log "INFO" "Detected nested zip structure, using: $($topItems[0].Name)"
             $sourceDir = $nested
-        }}
-    }}
+        }
+    }
 
     Write-Log "INFO" "Verifying extracted files..."
 
@@ -227,46 +226,46 @@ try {{
     $altExePath = Join-Path $sourceDir "moon-translator.exe"
     $altExePath2 = Join-Path $sourceDir "MoonTranslator.exe"
 
-    if (Test-Path $exePath) {{
+    if (Test-Path $exePath) {
         Write-Log "INFO" "Found $exeName in extracted files"
-    }} elseif (($exeName -ne "MoonTranslator.exe") -and (Test-Path $altExePath2)) {{
+    } elseif (($exeName -ne "MoonTranslator.exe") -and (Test-Path $altExePath2)) {
         Write-Log "INFO" "Found MoonTranslator.exe in extracted files"
         $exeName = "MoonTranslator.exe"
-    }} elseif (Test-Path $altExePath) {{
+    } elseif (Test-Path $altExePath) {
         Write-Log "INFO" "Found moon-translator.exe, renaming to MoonTranslator.exe"
         Rename-Item -Path $altExePath -NewName "MoonTranslator.exe"
         $exeName = "MoonTranslator.exe"
-    }} else {{
+    } else {
         $extractedFiles = Get-ChildItem -Path $sourceDir -Recurse -File | Select-Object -First 10
         Write-Log "ERROR" "$exeName not found in extracted files"
         Write-Log "ERROR" "Files found: $($extractedFiles.Name -join ', ')"
         throw "$exeName not found in extracted files"
-    }}
+    }
 
     Write-Log "INFO" "Installing new version to: $appDir"
 
     # Copy with retry for locked files
     $maxRetries = 3
-    for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {{
-        try {{
+    for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+        try {
             Copy-Item -Path "$sourceDir\*" -Destination $appDir -Recurse -Force -ErrorAction Stop
             Write-Log "INFO" "Installation completed successfully"
             break
-        }} catch {{
-            if ($attempt -lt $maxRetries) {{
+        } catch {
+            if ($attempt -lt $maxRetries) {
                 Write-Log "WARN" "Copy attempt $attempt failed (files may still be locked), retrying in 3 seconds..."
                 Start-Sleep -Seconds 3
-            }} else {{
+            } else {
                 throw "Failed to copy files after $maxRetries attempts: $_"
-            }}
-        }}
-    }}
+            }
+        }
+    }
 
     # Verify the exe was actually updated
     $installedExe = Join-Path $appDir $exeName
-    if (-not (Test-Path $installedExe)) {{
+    if (-not (Test-Path $installedExe)) {
         throw "Verification failed: $exeName not found in $appDir after copy"
-    }}
+    }
     Write-Log "INFO" "Verified: $exeName exists in install directory"
 
     Write-Log "INFO" "Cleaning up temporary files..."
@@ -281,18 +280,14 @@ try {{
 
     Write-Log "INFO" "Update completed successfully!"
     Start-Sleep -Seconds 2
-}} catch {{
+} catch {
     Write-Host ""
     Write-Log "ERROR" "Update failed: $_"
     Write-Host ""
     Write-Host "Press any key to close..." -ForegroundColor Gray
     pause
-}}
-"#,
-        zip = zip_path.display().to_string().replace("\\", "\\\\"),
-        app = app_dir.display().to_string().replace("\\", "\\\\"),
-        exe = exe_name,
-    );
+}
+"#;
 
     std::fs::write(&script_path, script_content)
         .map_err(|e| format!("Failed to create update script: {}", e))?;
@@ -304,6 +299,9 @@ try {{
         .arg("Bypass")
         .arg("-File")
         .arg(&script_path)
+        .arg(&zip_path)
+        .arg(&app_dir)
+        .arg(&exe_name)
         .spawn()
         .map_err(|e| format!("Failed to start update process: {}", e))?;
 
