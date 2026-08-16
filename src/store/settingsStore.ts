@@ -5,7 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 export type ProviderMode = "api" | "web";
 
 export const MIN_UI_SCALE = 0.7;
-export const MAX_UI_SCALE = 2;
+export const MAX_UI_SCALE = 1.7;
 const IS_MAC =
   typeof navigator !== "undefined" && /Mac/i.test(navigator.userAgent);
 const DEFAULT_POPUP_HOTKEY = IS_MAC ? "Super+C" : "Ctrl+C";

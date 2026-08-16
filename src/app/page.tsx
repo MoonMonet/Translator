@@ -246,20 +246,20 @@ export default function Home() {
         className="flex items-center justify-between px-6 h-18 shrink-0"
         data-tauri-drag-region
       >
-        <div className="flex items-center gap-4" data-tauri-drag-region>
+        <div className="flex items-center gap-4 min-w-0" data-tauri-drag-region>
           <div
-            className="w-7.5 h-7.5 rounded-full flex items-center justify-center"
+            className="w-7.5 h-7.5 rounded-full flex items-center justify-center shrink-0"
           >
             <Image width={10} height={10} src="/logo.webp" alt="MoonTranslator" className="w-full h-full" />
           </div>
           <h1
-            className="text-[22px] font-normal tracking-tight mb-0.5"
+            className="text-[22px] font-normal tracking-tight mb-0.5 truncate min-w-0 max-[800px]:hidden"
             style={{ color: "var(--md-on-surface)", letterSpacing: "-0.01em" }}
             data-tauri-drag-region
           >
             MoonTranslator
           </h1>
-          <div className="relative" ref={providerButtonRef}>
+          <div className="relative shrink-0" ref={providerButtonRef}>
             <button
               onClick={() => setApiDropdownOpen(!apiDropdownOpen)}
               className="md-badge state-layer cursor-pointer hover:brightness-110 transition-all border-none outline-none bg-surface-high text-secondary"
@@ -289,7 +289,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setAutoTranslate(!autoTranslate)}
             className={`md-chip ${autoTranslate ? "selected" : ""}`}
@@ -325,12 +325,10 @@ export default function Home() {
       </header>
 
       <main className="flex flex-col flex-1 mx-4 mb-4 overflow-hidden relative shadow-sm bg-surface-low rounded-(--md-shape-xl)">
-        <div className="flex items-center justify-between px-6 shrink-0 relative h-16.25 z-30">
-          
-          <div className="flex-1" />
+        <div className="flex items-center gap-3 px-6 py-3 shrink-0 relative z-30">
 
-          <div className="flex items-center gap-4 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className={`w-48 z-10 ${!isResetting ? "transition-all duration-300 ease-in-out" : ""} ${isSwapping ? "translate-x-66" : "translate-x-0"}`}>
+          <div className="flex-1 flex items-center justify-center gap-4 min-w-0">
+            <div className={`w-40 z-10 ${!isResetting ? "transition-all duration-300 ease-in-out" : ""} ${isSwapping ? "translate-x-[232px]" : "translate-x-0"}`}>
               <LanguageSelector
                 value={sourceLang}
                 onChange={setSourceLang}
@@ -348,7 +346,7 @@ export default function Home() {
               <ArrowRightLeft size={22} />
             </button>
 
-            <div className={`w-48 z-10 ${!isResetting ? "transition-all duration-300 ease-in-out" : ""} ${isSwapping ? "-translate-x-66" : "translate-x-0"}`}>
+            <div className={`w-40 z-10 ${!isResetting ? "transition-all duration-300 ease-in-out" : ""} ${isSwapping ? "-translate-x-[232px]" : "translate-x-0"}`}>
               <LanguageSelector
                 value={targetLang}
                 onChange={setTargetLang}
@@ -357,29 +355,27 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex-1 flex justify-end items-center h-full">
-            {!autoTranslate && (
-              <button
-                onClick={doTranslate}
-                disabled={isTranslating || !sourceText.trim()}
-                className="md-btn-filled state-layer shrink-0 flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-95 duration-200"
-              >
-                <Zap size={18} className={`${isTranslating ? "animate-pulse" : ""}`} />
-                Translate
-              </button>
-            )}
-          </div>
+          {!autoTranslate && (
+            <button
+              onClick={doTranslate}
+              disabled={isTranslating || !sourceText.trim()}
+              title="Translate"
+              className="md-btn-filled state-layer shrink-0 flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-95 duration-200 max-[600px]:!w-10 max-[600px]:!px-0 max-[600px]:gap-0"
+            >
+              <Zap size={18} className={`${isTranslating ? "animate-pulse" : ""}`} />
+              <span className="max-[600px]:hidden">Translate</span>
+            </button>
+          )}
         </div>
 
-        <div className="flex flex-col md:flex-row flex-1 min-h-0 relative -mt-2">
-          <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex flex-row flex-1 min-h-0 relative">
+          <div className="flex-1 flex flex-col min-h-0 min-w-0">
             <TranslatorInput />
           </div>
-          
-          <div className="w-px shrink-0 hidden md:block bg-(--md-outline-variant) my-6 opacity-30" />
-          <div className="h-px shrink-0 block md:hidden bg-(--md-outline-variant) mx-6 opacity-30" />
-          
-          <div className="flex-1 flex flex-col min-h-0">
+
+          <div className="w-px shrink-0 bg-(--md-outline-variant) my-6 opacity-30" />
+
+          <div className="flex-1 flex flex-col min-h-0 min-w-0">
             <TranslatorOutput />
           </div>
         </div>
