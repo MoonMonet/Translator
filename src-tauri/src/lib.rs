@@ -411,6 +411,7 @@ fn setup_global_shortcut(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
         let mut shift = false;
         let mut alt = false;
         let mut meta = false;
+        let mut trigger_held = false;
 
         if let Err(e) = listen(move |event| match event.event_type {
             EventType::KeyPress(Key::ControlLeft) | EventType::KeyPress(Key::ControlRight) => {
@@ -438,6 +439,9 @@ fn setup_global_shortcut(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
                 meta = false;
             }
             EventType::KeyPress(key) => {
+                if trigger_held {
+                    return;
+                }
                 let matches = app_handle
                     .try_state::<PopupHotkey>()
                     .and_then(|state| {
@@ -454,6 +458,7 @@ fn setup_global_shortcut(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
                     .unwrap_or(false);
 
                 if matches {
+                    trigger_held = true;
                     let now = std::time::Instant::now();
                     let mut trigger = false;
 
@@ -473,6 +478,7 @@ fn setup_global_shortcut(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
                     }
 
                     if trigger {
+                        trigger_held = false;
                         let ah = app_handle.clone();
                         tauri::async_runtime::spawn(async move {
                             if let Err(e) = open_popup(&ah).await {
@@ -487,6 +493,9 @@ fn setup_global_shortcut(app: &AppHandle) -> Result<(), Box<dyn std::error::Erro
                         }
                     }
                 }
+            }
+            EventType::KeyRelease(_) => {
+                trigger_held = false;
             }
             _ => {}
         }) {
