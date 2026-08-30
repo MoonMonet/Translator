@@ -70,10 +70,29 @@ export default function SettingsPanel() {
     Record<string, boolean | null>
   >({});
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
+  const [autostartFailed, setAutostartFailed] = useState(false);
 
   useEffect(() => {
     setEditingKeys({ ...apiKeys });
   }, [apiKeys, settingsOpen]);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+    setAutostartFailed(false);
+
+    (async () => {
+      try {
+        const { isEnabled } = await import("@tauri-apps/plugin-autostart");
+        const enabled = await isEnabled();
+        if (enabled !== autostart) {
+          setAutostart(enabled);
+          await saveToStore();
+        }
+      } catch (e) {
+        console.log("Autostart not available:", e);
+      }
+    })();
+  }, [settingsOpen, autostart, setAutostart, saveToStore]);
 
   const handleSaveKey = useCallback(
     async (provider: ApiProvider) => {
@@ -117,20 +136,22 @@ export default function SettingsPanel() {
 
   const handleAutostartToggle = useCallback(async () => {
     const newValue = !autostart;
-    setAutostart(newValue);
+    setAutostartFailed(false);
 
     try {
+      const { enable, disable } = await import("@tauri-apps/plugin-autostart");
       if (newValue) {
-        const { enable } = await import("@tauri-apps/plugin-autostart");
         await enable();
       } else {
-        const { disable } = await import("@tauri-apps/plugin-autostart");
         await disable();
       }
     } catch (e) {
       console.log("Autostart not available:", e);
+      setAutostartFailed(true);
+      return;
     }
 
+    setAutostart(newValue);
     await saveToStore();
   }, [autostart, setAutostart, saveToStore]);
 
@@ -449,6 +470,12 @@ export default function SettingsPanel() {
                   <div className="md-switch-thumb" />
                 </div>
               </button>
+
+              {autostartFailed && (
+                <div className="text-[11px] text-error px-1">
+                  Could not change the startup setting
+                </div>
+              )}
 
               <div className="md-card flex items-center justify-between">
                 <div className="flex items-center gap-3 text-sm text-foreground">
