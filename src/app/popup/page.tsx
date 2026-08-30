@@ -11,6 +11,7 @@ import {
   detectLanguageSimple,
   getSmartTargetLang,
 } from "@/lib/translate";
+import { loadCache } from "@/lib/settingsCache";
 import LanguageSelector from "@/components/LanguageSelector";
 import DropdownPortal from "@/components/DropdownPortal";
 import {
@@ -108,8 +109,7 @@ export default function PopupPage() {
         setTargetLang(smartTarget);
 
         try {
-          const { load } = await import("@tauri-apps/plugin-store");
-          const store = await load("settings.json", { defaults: {} });
+          const store = await loadCache();
           const savedSource = await store.get<string>("popupSourceLang");
           const savedTarget = await store.get<string>("popupTargetLang");
           if (savedSource) setSourceLang(savedSource);
@@ -266,8 +266,7 @@ export default function PopupPage() {
 
   const saveLangPref = async (key: string, val: string) => {
     try {
-      const { load } = await import("@tauri-apps/plugin-store");
-      const store = await load("settings.json", { defaults: {} });
+      const store = await loadCache();
       await store.set(key, val);
       await store.save();
     } catch {}

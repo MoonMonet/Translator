@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import Image from "next/image";
+import { loadCache } from "@/lib/settingsCache";
 
 interface ChangelogModalProps {
   isOpen?: boolean;
@@ -44,8 +45,7 @@ export default function ChangelogModal({ isOpen: externalIsOpen, onClose: extern
 
   const fetchChangelog = async () => {
     try {
-      const { load } = await import("@tauri-apps/plugin-store");
-      const store = await load("settings.json", { defaults: {} });
+      const store = await loadCache();
       const { APP_VERSION } = await import("@/lib/version");
       
       const cachedChangelog = await store.get<string>("cachedChangelog");
@@ -86,8 +86,7 @@ export default function ChangelogModal({ isOpen: externalIsOpen, onClose: extern
 
   const checkForChangelog = async () => {
     try {
-      const { load } = await import("@tauri-apps/plugin-store");
-      const store = await load("settings.json", { defaults: {} });
+      const store = await loadCache();
       
       const lastVersion = await store.get<string>("lastSeenVersion");
       const { APP_VERSION } = await import("@/lib/version");
