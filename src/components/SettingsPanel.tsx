@@ -25,6 +25,7 @@ import {
   ZoomIn,
   Minus,
   Plus,
+  Minimize2,
 } from "lucide-react";
 
 export default function SettingsPanel() {
@@ -35,6 +36,8 @@ export default function SettingsPanel() {
     setDarkMode,
     autostart,
     setAutostart,
+    startMinimized,
+    setStartMinimized,
     apiKeys,
     setApiKey,
     activeApi,
@@ -156,6 +159,11 @@ export default function SettingsPanel() {
     setAutostart(newValue);
     await saveToStore();
   }, [autostart, setAutostart, saveToStore]);
+
+  const handleStartMinimizedToggle = useCallback(async () => {
+    setStartMinimized(!startMinimized);
+    await saveToStore();
+  }, [startMinimized, setStartMinimized, saveToStore]);
 
   const handleScale = useCallback(
     async (scale: number) => {
@@ -477,6 +485,21 @@ export default function SettingsPanel() {
                 <div className="text-[11px] text-error px-1">
                   Could not change the startup setting
                 </div>
+              )}
+
+              {autostart && (
+                <button
+                  onClick={handleStartMinimizedToggle}
+                  className="md-card flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-3 text-sm text-foreground">
+                    <Minimize2 size={18} />
+                    Start minimized to tray
+                  </div>
+                  <div className={`md-switch ${startMinimized ? "on" : ""}`}>
+                    <div className="md-switch-thumb" />
+                  </div>
+                </button>
               )}
 
               <div className="md-card flex items-center justify-between">

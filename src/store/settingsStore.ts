@@ -15,6 +15,7 @@ const clampScale = (scale: number) =>
 const STORE_DEFAULTS = {
   darkMode: true,
   autostart: false,
+  startMinimized: false,
   apiKeys: { deepl: "", google: "", bing: "", lara: "", custom: "" },
   activeApi: "google",
   providerModes: {} as Record<string, ProviderMode>,
@@ -29,6 +30,7 @@ const STORE_DEFAULTS = {
 interface SettingsState {
   darkMode: boolean;
   autostart: boolean;
+  startMinimized: boolean;
   settingsOpen: boolean;
   apiKeys: Record<ApiProvider, string>;
   activeApi: ApiProvider;
@@ -39,6 +41,7 @@ interface SettingsState {
 
   setDarkMode: (dark: boolean) => void;
   setAutostart: (auto: boolean) => void;
+  setStartMinimized: (minimized: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   setApiKey: (provider: ApiProvider, key: string) => void;
   setActiveApi: (api: ApiProvider) => void;
@@ -55,6 +58,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   darkMode: true,
   autostart: false,
+  startMinimized: false,
   settingsOpen: false,
   apiKeys: {
     deepl: "",
@@ -77,6 +81,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   setAutostart: (auto: boolean) => set({ autostart: auto }),
+  setStartMinimized: (minimized: boolean) => set({ startMinimized: minimized }),
   setSettingsOpen: (open: boolean) => set({ settingsOpen: open }),
 
   setApiKey: (provider: ApiProvider, key: string) =>
@@ -105,6 +110,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         set({
           darkMode: finalDarkMode,
           autostart: parsed.autostart ?? false,
+          startMinimized: parsed.startMinimized ?? false,
           apiKeys: { ...STORE_DEFAULTS.apiKeys, ...(parsed.apiKeys || {}) },
           activeApi: parsed.activeApi ?? "google",
           providerModes: { ...STORE_DEFAULTS.providerModes, ...(parsed.providerModes || {}) },
@@ -135,6 +141,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       const payload = JSON.stringify({
         darkMode: state.darkMode,
         autostart: state.autostart,
+        startMinimized: state.startMinimized,
         apiKeys: state.apiKeys,
         activeApi: state.activeApi,
         providerModes: state.providerModes,
