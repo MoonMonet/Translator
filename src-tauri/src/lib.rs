@@ -6,6 +6,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Manager, WebviewUrl, WebviewWindowBuilder,
 };
+use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 mod commands;
@@ -122,6 +123,7 @@ const DEFAULT_OPEN_HOTKEY: &str = "Ctrl+Shift+T";
 const DEFAULT_POPUP_HOTKEY: &str = "Super+C";
 #[cfg(not(target_os = "macos"))]
 const DEFAULT_POPUP_HOTKEY: &str = "Ctrl+C";
+const AUTOSTART_ARG: &str = "--autostart";
 const DOUBLE_PRESS_TIMEOUT_MS: u128 = 500;
 const POPUP_WIDTH: f64 = 380.0;
 const POPUP_HEIGHT: f64 = 280.0;
@@ -186,6 +188,23 @@ fn read_open_hotkey(app: &AppHandle) -> String {
         .ok()
         .and_then(|json| json.get("openHotkey").and_then(|v| v.as_str()).map(str::to_string))
         .unwrap_or_else(|| DEFAULT_OPEN_HOTKEY.to_string())
+}
+
+fn read_start_minimized(app: &AppHandle) -> bool {
+    let path = match app.path().app_config_dir() {
+        Ok(dir) => dir.join("settings.json"),
+        Err(_) => return false,
+    };
+
+    let content = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
+
+    serde_json::from_str::<serde_json::Value>(&content)
+        .ok()
+        .and_then(|json| json.get("startMinimized").and_then(|v| v.as_bool()))
+        .unwrap_or(false)
 }
 
 fn apply_open_hotkey(app: &AppHandle, accel: &str) -> Result<(), String> {
@@ -274,7 +293,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            Some(vec![]),
+            Some(vec![AUTOSTART_ARG]),
         ))
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -307,6 +326,26 @@ pub fn run() {
                 if display_backend == "wayland" {
                     log::info!("Running on a Wayland session: some features (global shortcut, caret positioning) are limited. The 'wtype' or 'ydotool' tool is needed for the Replace feature.");
                 }
+            }
+
+            // Entries registered before AUTOSTART_ARG existed carry no arguments,
+            // so rewrite them once the app knows autostart is on.
+            let autolaunch = app.autolaunch();
+            if autolaunch.is_enabled().unwrap_or(false) {
+                let _ = autolaunch
+                    .enable()
+                    .inspect_err(|e| log::warn!("Failed to refresh autostart entry: {e}"));
+            }
+
+            let launched_by_autostart = std::env::args().any(|arg| arg == AUTOSTART_ARG);
+
+            if launched_by_autostart && read_start_minimized(app.handle()) {
+                #[cfg(target_os = "windows")]
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.set_skip_taskbar(true);
+                }
+            } else {
+                show_and_focus_window(app.handle(), "main");
             }
 
             let open_item = MenuItemBuilder::with_id("open", "Open MoonTranslator").build(app)?;
