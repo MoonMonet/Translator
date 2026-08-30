@@ -5,6 +5,7 @@ import { useSettingsStore } from "@/store/settingsStore";
 import { useTranslatorStore, API_PROVIDERS } from "@/store/translatorStore";
 import type { ApiProvider } from "@/store/translatorStore";
 import { validateApiKey } from "@/lib/translate";
+import { loadCache } from "@/lib/settingsCache";
 import { APP_VERSION } from "@/lib/version";
 import ChangelogModal from "@/components/ChangelogModal";
 import {
@@ -47,6 +48,7 @@ export default function SettingsPanel() {
     uiScale,
     setUiScale,
     saveToStore,
+    clearStore,
   } = useSettingsStore();
 
   const [showChangelogModal, setShowChangelogModal] = useState(false);
@@ -253,15 +255,15 @@ export default function SettingsPanel() {
 
   const handleClearData = useCallback(async () => {
     try {
-      const { load } = await import("@tauri-apps/plugin-store");
-      const store = await load("settings.json", { defaults: {} });
+      const store = await loadCache();
       await store.clear();
       await store.save();
+      await clearStore();
       window.location.reload();
     } catch {
       console.log("Store not available");
     }
-  }, []);
+  }, [clearStore]);
 
   const alwaysFreeProviders = ["google", "bing"];
 

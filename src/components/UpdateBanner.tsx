@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Download, FileText } from "lucide-react";
 import { APP_VERSION, isNewerVersion } from "@/lib/version";
 import { getPlatform } from "@/lib/platform";
+import { loadCache } from "@/lib/settingsCache";
 
 interface UpdateBannerProps {
   onViewChangelog?: () => void;
@@ -82,8 +83,7 @@ export default function UpdateBanner({ onViewChangelog }: UpdateBannerProps) {
         }
       }
 
-      const { load } = await import("@tauri-apps/plugin-store");
-      const store = await load("settings.json", { defaults: {} });
+      const store = await loadCache();
       await store.set("lastUpdateCheck", Date.now());
       await store.save();
     } catch (error) {

@@ -48,6 +48,7 @@ interface SettingsState {
   setUiScale: (scale: number) => void;
   loadFromStore: () => Promise<void>;
   saveToStore: () => Promise<void>;
+  clearStore: () => Promise<void>;
 }
 
 
@@ -144,6 +145,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       await invoke("save_settings", { payload });
     } catch (e) {
       console.log("Failed to save native store:", e);
+    }
+  },
+
+  clearStore: async () => {
+    try {
+      await invoke("save_settings", { payload: "{}" });
+    } catch (e) {
+      console.log("Failed to clear native store:", e);
     }
   },
 }));
